@@ -1,0 +1,10 @@
+add_subdirectory(glad)
+add_subdirectory(glm)
+add_subdirectory(stb)
+
+set(GLFW_BUILD_EXAMPLES "OFF" CACHE STRING "")
+set(GLFW_BUILD_TESTS "OFF" CACHE STRING "")
+set(GLFW_BUILD_DOCS "OFF" CACHE STRING "")
+set(GLFW_BUILD_INSTALL "OFF" CACHE STRING "")
+set(BUILD_SHARED_LIBS "OFF" CACHE STRING "")
+add_subdirectory(glfw)
