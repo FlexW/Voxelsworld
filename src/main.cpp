@@ -4,6 +4,8 @@
 #include "gl/gl_shader.hpp"
 #include "gl/gl_vertex_buffer.hpp"
 #include "glm/ext/matrix_clip_space.hpp"
+#include "glm/gtx/string_cast.hpp"
+#include "world.hpp"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 // clang-format on
@@ -14,124 +16,6 @@
 #include <stdexcept>
 #include <string>
 
-class Cube
-{
-public:
-  Cube()
-  {
-    std::vector<glm::vec3> points{
-        // clang-format off
-
-        // Front
-        {-0.5f, -0.5f, -0.5f},
-        {0.5f, -0.5f, -0.5f},
-        {0.5f, 0.5f, -0.5f},
-        {0.5f, 0.5f, -0.5f},
-        {-0.5f, 0.5f, -0.5f},
-        {-0.5f, -0.5f, -0.5f},
-
-        // Back
-        {-0.5f, -0.5f, 0.5f},
-        {0.5f, -0.5f, 0.5f},
-        {0.5f, 0.5f, 0.5f},
-        {0.5f, 0.5f, 0.5f},
-        {-0.5f, 0.5f, 0.5f},
-        {-0.5f, -0.5f, 0.5f},
-
-        // clang-format on
-    };
-
-    std::vector<glm::vec3> normals{
-        // clang-format off
-
-        // Front
-        {-0.0f, 0.0f, -1.0f},
-        {-0.0f, 0.0f, -1.0f},
-        {-0.0f, 0.0f, -1.0f},
-        {-0.0f, 0.0f, -1.0f},
-        {-0.0f, 0.0f, -1.0f},
-        {-0.0f, 0.0f, -1.0f},
-
-        // Back
-        {-0.0f, 0.0f, 1.0f},
-        {-0.0f, 0.0f, 1.0f},
-        {-0.0f, 0.0f, 1.0f},
-        {-0.0f, 0.0f, 1.0f},
-        {-0.0f, 0.0f, 1.0f},
-        {-0.0f, 0.0f, 1.0f},
-
-        // clang-format on
-    };
-
-    std::vector<glm::vec2> tex_coords{
-        // clang-format off
-
-        // Front
-        {0.0f, 0.0f},
-        {1.0f, 0.0f},
-        {1.0f, 1.0f},
-        {1.0f, 1.0f},
-        {0.0f, 1.0f},
-        {0.0f, 0.0f},
-
-        // Back
-        {0.0f, 0.0f},
-        {1.0f, 0.0f},
-        {1.0f, 1.0f},
-        {1.0f, 1.0f},
-        {0.0f, 1.0f},
-        {0.0f, 0.0f},
-
-        // clang-format on
-    };
-
-    std::vector<unsigned> indices{
-        // clang-format off
-
-        // Front
-        0, 1, 2, 3, 4, 5,
-
-        // Back
-        6, 7, 8, 9, 10, 11,
-
-        // clang-format on
-    };
-
-    GlVertexBufferLayout points_layout;
-    points_layout.push_float(3);
-    points_buffer_.set_data(points, points_layout);
-
-    GlVertexBufferLayout normals_layout;
-    normals_layout.push_float(3);
-    normals_buffer_.set_data(normals, normals_layout);
-
-    GlVertexBufferLayout tex_coords_layout;
-    tex_coords_layout.push_float(2);
-    tex_coords_buffer_.set_data(tex_coords, tex_coords_layout);
-
-    index_buffer_.set_data(indices);
-
-    vertex_buffers_.push_back(&points_buffer_);
-    vertex_buffers_.push_back(&normals_buffer_);
-    vertex_buffers_.push_back(&tex_coords_buffer_);
-  }
-
-  std::pair<std::vector<const GlVertexBuffer *>, const GlIndexBuffer *>
-  data() const
-  {
-    return {vertex_buffers_, &index_buffer_};
-  }
-
-private:
-  GlVertexBuffer points_buffer_;
-  GlVertexBuffer normals_buffer_;
-  GlVertexBuffer tex_coords_buffer_;
-
-  std::vector<const GlVertexBuffer *> vertex_buffers_;
-
-  GlIndexBuffer  index_buffer_;
-};
-
 namespace
 {
 constexpr auto opengl_version_major = 4;
@@ -141,6 +25,13 @@ constexpr auto opengl_debug = true;
 
 auto window_width  = 1280;
 auto window_height = 720;
+
+auto           is_draw_wireframe = false;
+auto           is_cull_face      = true;
+constexpr auto is_cursor_enabled = false;
+
+constexpr auto camera_near = 0.1f;
+constexpr auto camera_far  = 800.0f;
 
 constexpr auto window_title = "OpenGL App";
 
@@ -275,6 +166,46 @@ void window_framebuffer_size_callback(GLFWwindow *window, int width, int height)
   window_height = height;
 }
 
+void window_close_callback(GLFWwindow *window)
+{
+  glfwSetWindowShouldClose(window, GLFW_TRUE);
+}
+
+void key_callback(GLFWwindow *window,
+                  int         key,
+                  int         scancode,
+                  int         action,
+                  int         mods)
+{
+  // Toggle wireframe
+  if (key == GLFW_KEY_F1 && action == GLFW_PRESS)
+  {
+    if (is_draw_wireframe)
+    {
+      glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
+    else
+    {
+      glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    }
+    is_draw_wireframe = !is_draw_wireframe;
+  }
+
+  // Toggle back face culling
+  if (key == GLFW_KEY_F2 && action == GLFW_PRESS)
+  {
+    if (is_cull_face)
+    {
+      glDisable(GL_CULL_FACE);
+    }
+    else
+    {
+      glEnable(GL_CULL_FACE);
+    }
+    is_cull_face = !is_cull_face;
+  }
+}
+
 void mouse_movement_callback(GLFWwindow *window, double x, double y)
 {
 
@@ -352,13 +283,24 @@ int main()
 
   glfwSetFramebufferSizeCallback(window, window_framebuffer_size_callback);
   glfwSetCursorPosCallback(window, mouse_movement_callback);
+  glfwSetKeyCallback(window, key_callback);
+  glfwSetWindowCloseCallback(window, window_close_callback);
 
-  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  if (is_cursor_enabled)
+  {
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+  }
+  else
+  {
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  }
 
   if (!gladLoadGL())
   {
     std::cerr << "GLAD could not load OpenGL" << std::endl;
   }
+
+  glfwWindowHint(GLFW_SAMPLES, 8);
 
   if (opengl_debug)
   {
@@ -379,11 +321,27 @@ int main()
 
   gl_dump_info();
 
+  if (is_cull_face)
+  {
+    glEnable(GL_CULL_FACE);
+  }
+  else
+  {
+    glDisable(GL_CULL_FACE);
+  }
   glEnable(GL_DEPTH_TEST);
+  if (is_draw_wireframe)
+  {
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+  }
+  else
+  {
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+  }
 
   try
   {
-    Cube cube;
+    auto world = std::make_unique<World>();
 
     GlShader shader;
     shader.init("shaders/blinn_phong.vert", "shaders/blinn_phong.frag");
@@ -391,7 +349,7 @@ int main()
     auto last_time    = std::chrono::high_resolution_clock::now();
     auto current_time = std::chrono::high_resolution_clock::now();
 
-    while (true)
+    while (glfwWindowShouldClose(window) == GLFW_FALSE)
     {
       glfwPollEvents();
 
@@ -424,15 +382,19 @@ int main()
         break;
       }
 
+      world->set_player_position(camera.position());
+      // std::cout << "Position: " << glm::to_string(camera.position())
+      //           << std::endl;
+
       const auto projection_matrix =
           glm::perspective(glm::radians(camera.zoom()),
                            static_cast<float>(window_width) / window_height,
-                           0.1f,
-                           100.0f);
+                           camera_near,
+                           camera_far);
 
       glViewport(0, 0, window_width, window_height);
       glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-      glClearColor(0.4f, 0.4f, 0.4f, 1.0f);
+      glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
 
       {
         // Draw cube
@@ -446,16 +408,15 @@ int main()
         shader.set_uniform("spot_light_count", 0);
         shader.set_uniform("directional_light_enabled", true);
         shader.set_uniform("directional_light.direction",
-                           glm::vec3(0.0f, -1.0f, 0.0f));
+                           glm::normalize(glm::vec3(-1.0f, -1.0f, 0.0f)));
         shader.set_uniform("directional_light.ambient_color", glm::vec3(0.6f));
         shader.set_uniform("directional_light.diffuse_color", glm::vec3(0.9f));
         shader.set_uniform("directional_light.specular_color", glm::vec3(1.0f));
 
         // Material
-        shader.set_uniform("in_diffuse_color", glm::vec3(0.7f, 0.1f, 0.1f));
+        shader.set_uniform("in_diffuse_color", glm::vec3(0.34f, 0.49f, 0.27f));
 
-        const auto [vertex_buffer, index_buffer] = cube.data();
-        shader.draw({vertex_buffer}, *index_buffer);
+        world->draw(shader);
         shader.unbind();
       }
 

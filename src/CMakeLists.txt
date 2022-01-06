@@ -6,6 +6,9 @@ set_warnings_as_errors(app)
 target_sources(app PRIVATE
   main.cpp
   camera.cpp
+  world.cpp
+  chunk.cpp
+  block.cpp
   )
 
 target_link_libraries(app PRIVATE
