@@ -1,10 +1,16 @@
 #include "world.hpp"
 #include "block.hpp"
 #include "chunk.hpp"
-#include "glm/ext/matrix_transform.hpp"
+#include "defer.hpp"
+#include "gl/gl_texture.hpp"
+
+#include <memory>
+#include <stb_image.h>
 
 #include <cassert>
 
+namespace
+{
 constexpr int t = 4;
 
 std::pair<int, int> position_to_chunk_position(const glm::vec3 &position)
@@ -31,6 +37,38 @@ std::pair<int, int> position_to_chunk_position(const glm::vec3 &position)
   }
 
   return {static_cast<int>(x), static_cast<int>(z)};
+}
+
+[[nodiscard]] std::unique_ptr<GlTexture>
+load_texture(const std::filesystem::path &file_path)
+{
+  int width = 0, height = 0, channels_count = 0;
+  stbi_set_flip_vertically_on_load(true);
+  auto texture_data = stbi_load(file_path.string().c_str(),
+                                &width,
+                                &height,
+                                &channels_count,
+                                0);
+  if (!texture_data)
+  {
+    std::cerr << "Error: Could not load texture " << file_path.string()
+              << std::endl;
+    return {};
+  }
+  defer(stbi_image_free(texture_data));
+
+  auto texture = std::make_unique<GlTexture>();
+  texture->set_data(texture_data, width, height, channels_count);
+
+  return texture;
+}
+
+} // namespace
+
+void World::init()
+{
+  texture_ = load_texture("data/test_texture.jpg");
+  // texture_ = load_texture("data/awesomeface.png");
 }
 
 void World::set_player_position(const glm::vec3 &position)
@@ -157,6 +195,14 @@ void World::draw(GlShader &shader)
           glm::translate(glm::mat4(1.0f),
                          glm::vec3(x * Chunk::width, 0, z * Chunk::width));
       shader.set_uniform("model_matrix", chunk_model_matrix);
+
+      // Material
+      // shader.set_uniform("in_diffuse_color", glm::vec3(0.34f, 0.49f, 0.27f));
+      shader.set_uniform("is_diffuse_tex", true);
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_2D, texture_->id());
+      shader.set_uniform("in_diffuse_tex", static_cast<int>(texture_->id()));
+      glBindTexture(GL_TEXTURE_2D, 0);
       c.draw(shader);
     }
   }

@@ -1,5 +1,6 @@
 // clang-format off
 #include "camera.hpp"
+#include "debug_draw.hpp"
 #include "gl/gl_index_buffer.hpp"
 #include "gl/gl_shader.hpp"
 #include "gl/gl_vertex_buffer.hpp"
@@ -13,6 +14,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <iostream>
+#include <memory>
 #include <stdexcept>
 #include <string>
 
@@ -342,6 +344,9 @@ int main()
   try
   {
     auto world = std::make_unique<World>();
+    world->init();
+
+    auto debug_draw = std::make_unique<DebugDraw>();
 
     GlShader shader;
     shader.init("shaders/blinn_phong.vert", "shaders/blinn_phong.frag");
@@ -386,6 +391,17 @@ int main()
       // std::cout << "Position: " << glm::to_string(camera.position())
       //           << std::endl;
 
+      // Draw coordinate system
+      debug_draw->draw_line(glm::vec3(0.0f),
+                            glm::vec3(10.0f, 0.0f, 0.0f),
+                            glm::vec3(1.0f, 0.0f, 0.0f));
+      debug_draw->draw_line(glm::vec3(0.0f),
+                            glm::vec3(0.0f, 10.0f, 0.0f),
+                            glm::vec3(0.0f, 1.0f, 0.0f));
+      debug_draw->draw_line(glm::vec3(0.0f),
+                            glm::vec3(0.0f, 0.0f, 10.0f),
+                            glm::vec3(0.0f, 0.0f, 1.0f));
+
       const auto projection_matrix =
           glm::perspective(glm::radians(camera.zoom()),
                            static_cast<float>(window_width) / window_height,
@@ -397,7 +413,7 @@ int main()
       glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
 
       {
-        // Draw cube
+        // Draw world
         shader.bind();
         shader.set_uniform("model_matrix", glm::mat4(1.0f));
         shader.set_uniform("view_matrix", camera.view_matrix());
@@ -413,11 +429,11 @@ int main()
         shader.set_uniform("directional_light.diffuse_color", glm::vec3(0.9f));
         shader.set_uniform("directional_light.specular_color", glm::vec3(1.0f));
 
-        // Material
-        shader.set_uniform("in_diffuse_color", glm::vec3(0.34f, 0.49f, 0.27f));
-
         world->draw(shader);
         shader.unbind();
+
+        // Debug draw
+        debug_draw->submit(camera.view_matrix(), projection_matrix);
       }
 
       glfwSwapBuffers(window);

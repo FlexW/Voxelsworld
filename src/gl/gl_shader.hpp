@@ -14,13 +14,17 @@
 class GlShader
 {
 public:
+  GlShader() = default;
   ~GlShader();
 
   void init(const std::filesystem::path &vertex_shader_file_path,
             const std::filesystem::path &fragment_shader_file_path);
 
   void draw(const std::vector<const GlVertexBuffer *> &vertex_buffers,
-            const GlIndexBuffer                       &index_buffer);
+            const GlIndexBuffer                       &index_buffer,
+            GLenum                                     mode = GL_TRIANGLES);
+  void draw(const std::vector<const GlVertexBuffer *> &vertex_buffers,
+            GLenum                                     mode = GL_TRIANGLES);
 
   void bind();
   void unbind();
@@ -36,5 +40,13 @@ private:
 
   std::unordered_map<std::string, GLint> uniform_locations_;
 
+  GlShader(const GlShader &) = delete;
+  void operator=(const GlShader &) = delete;
+  GlShader(GlShader &&)            = delete;
+  void operator=(GlShader &&) = delete;
+
   [[nodiscard]] GLint uniform_location(const std::string &name);
+
+  void
+  bind_vertex_array(const std::vector<const GlVertexBuffer *> &vertex_buffers);
 };

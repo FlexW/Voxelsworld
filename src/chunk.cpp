@@ -187,11 +187,10 @@ void Chunk::fill_mesh_data(const World &world)
           normals.emplace_back(0.0f, 0.0f, 1.0f);
           normals.emplace_back(0.0f, 0.0f, 1.0f);
 
-          // TODO: make them correct
+          tex_coords.emplace_back(1.0f, 1.0f);
           tex_coords.emplace_back(0.0f, 1.0f);
           tex_coords.emplace_back(0.0f, 0.0f);
           tex_coords.emplace_back(1.0f, 0.0f);
-          tex_coords.emplace_back(1.0f, 1.0f);
 
           indices.push_back(current_index + 0);
           indices.push_back(current_index + 1);
@@ -215,11 +214,10 @@ void Chunk::fill_mesh_data(const World &world)
           normals.emplace_back(0.0f, 1.0f, 0.0f);
           normals.emplace_back(0.0f, 1.0f, 0.0f);
 
-          // TODO: make them correct
-          tex_coords.emplace_back(0.0f, 1.0f);
           tex_coords.emplace_back(0.0f, 0.0f);
           tex_coords.emplace_back(1.0f, 0.0f);
           tex_coords.emplace_back(1.0f, 1.0f);
+          tex_coords.emplace_back(0.0f, 1.0f);
 
           indices.push_back(current_index + 0);
           indices.push_back(current_index + 1);
@@ -243,7 +241,6 @@ void Chunk::fill_mesh_data(const World &world)
           normals.emplace_back(0.0f, -1.0f, 0.0f);
           normals.emplace_back(0.0f, -1.0f, 0.0f);
 
-          // TODO: make them correct
           tex_coords.emplace_back(0.0f, 1.0f);
           tex_coords.emplace_back(0.0f, 0.0f);
           tex_coords.emplace_back(1.0f, 0.0f);
@@ -271,11 +268,10 @@ void Chunk::fill_mesh_data(const World &world)
           normals.emplace_back(-1.0f, 0.0f, 0.0f);
           normals.emplace_back(-1.0f, 0.0f, 0.0f);
 
-          // TODO: make them correct
-          tex_coords.emplace_back(0.0f, 1.0f);
-          tex_coords.emplace_back(0.0f, 0.0f);
           tex_coords.emplace_back(1.0f, 0.0f);
           tex_coords.emplace_back(1.0f, 1.0f);
+          tex_coords.emplace_back(0.0f, 1.0f);
+          tex_coords.emplace_back(0.0f, 0.0f);
 
           indices.push_back(current_index + 0);
           indices.push_back(current_index + 1);
@@ -299,11 +295,10 @@ void Chunk::fill_mesh_data(const World &world)
           normals.emplace_back(1.0f, 0.0f, 0.0f);
           normals.emplace_back(1.0f, 0.0f, 0.0f);
 
-          // TODO: make them correct
-          tex_coords.emplace_back(0.0f, 1.0f);
           tex_coords.emplace_back(0.0f, 0.0f);
           tex_coords.emplace_back(1.0f, 0.0f);
           tex_coords.emplace_back(1.0f, 1.0f);
+          tex_coords.emplace_back(0.0f, 1.0f);
 
           indices.push_back(current_index + 0);
           indices.push_back(current_index + 1);

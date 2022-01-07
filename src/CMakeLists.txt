@@ -9,6 +9,7 @@ target_sources(app PRIVATE
   world.cpp
   chunk.cpp
   block.cpp
+  debug_draw.cpp
   )
 
 target_link_libraries(app PRIVATE

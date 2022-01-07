@@ -19,4 +19,9 @@ public:
 private:
   GLuint  index_buffer_id_{};
   GLsizei count_{};
+
+  GlIndexBuffer(const GlIndexBuffer &) = delete;
+  void operator=(const GlIndexBuffer &) = delete;
+  GlIndexBuffer(GlIndexBuffer &&)       = delete;
+  void operator=(GlIndexBuffer &&) = delete;
 };

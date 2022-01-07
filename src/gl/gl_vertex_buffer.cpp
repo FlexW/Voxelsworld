@@ -32,3 +32,5 @@ GlVertexBuffer::~GlVertexBuffer()
 GLuint GlVertexBuffer::id() const { return vertex_buffer_id_; }
 
 GlVertexBufferLayout GlVertexBuffer::layout() const { return layout_; }
+
+GLsizei GlVertexBuffer::count() const { return vertex_count_; }

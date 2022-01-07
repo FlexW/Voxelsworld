@@ -30,22 +30,31 @@ public:
   GLuint id() const;
 
   template <typename T>
-  void set_data(const std::vector<T> &data, const GlVertexBufferLayout layout)
+  void set_data(const std::vector<T>      &data,
+                const GlVertexBufferLayout layout,
+                GLenum                     usage = GL_STATIC_DRAW)
   {
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_id_);
-    glBufferData(GL_ARRAY_BUFFER,
-                 data.size() * sizeof(T),
-                 data.data(),
-                 GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(T), data.data(), usage);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+    vertex_count_ = data.size();
     layout_ = layout;
   }
 
   GlVertexBufferLayout layout() const;
 
+  GLsizei count() const;
+
 private:
   GLuint vertex_buffer_id_{};
 
   GlVertexBufferLayout layout_;
+
+  GLsizei vertex_count_{};
+
+  GlVertexBuffer(const GlVertexBuffer &) = delete;
+  void operator=(const GlVertexBuffer &) = delete;
+  GlVertexBuffer(GlVertexBuffer &&)      = delete;
+  void operator=(GlVertexBuffer &&) = delete;
 };

@@ -198,30 +198,25 @@ void GlShader::bind() { glUseProgram(program_id_); }
 void GlShader::unbind() { glUseProgram(0); }
 
 void GlShader::draw(const std::vector<const GlVertexBuffer *> &vertex_buffers,
-                    const GlIndexBuffer                       &index_buffer)
+                    const GlIndexBuffer                       &index_buffer,
+                    GLenum                                     mode)
 {
-  glBindVertexArray(vertex_array_id_);
+  bind_vertex_array(vertex_buffers);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer.id());
 
-  GLuint binding_index = 0;
-  for (int i = 0; i < vertex_buffers.size(); ++i)
-  {
-    const auto &vertex_buffer        = vertex_buffers[i];
-    const auto &vertex_buffer_layout = vertex_buffer->layout();
-    GLintptr    offset               = 0;
-    for (const auto &vertex_buffer_layout_element :
-         vertex_buffer_layout.elements())
-    {
-      glBindVertexBuffer(binding_index,
-                         vertex_buffer->id(),
-                         offset,
-                         vertex_buffer_layout_element.stride);
-      ++binding_index;
-      offset += vertex_buffer_layout_element.stride;
-    }
-  }
+  glDrawElements(mode, index_buffer.count(), GL_UNSIGNED_INT, nullptr);
 
-  glDrawElements(GL_TRIANGLES, index_buffer.count(), GL_UNSIGNED_INT, nullptr);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+  glBindVertexArray(0);
+}
+
+void GlShader::draw(const std::vector<const GlVertexBuffer *> &vertex_buffers,
+                    GLenum                                     mode)
+{
+  assert(vertex_buffers.size() > 0);
+  bind_vertex_array(vertex_buffers);
+
+  glDrawArrays(mode, 0, vertex_buffers[0]->count());
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
@@ -273,4 +268,28 @@ void GlShader::set_uniform(const std::string &name, const glm::mat4 &value)
 {
   GET_UNIFORM_OR_RETURN(name, location)
   glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
+}
+
+void GlShader::bind_vertex_array(
+    const std::vector<const GlVertexBuffer *> &vertex_buffers)
+{
+  glBindVertexArray(vertex_array_id_);
+
+  GLuint binding_index = 0;
+  for (int i = 0; i < vertex_buffers.size(); ++i)
+  {
+    const auto &vertex_buffer        = vertex_buffers[i];
+    const auto &vertex_buffer_layout = vertex_buffer->layout();
+    GLintptr    offset               = 0;
+    for (const auto &vertex_buffer_layout_element :
+         vertex_buffer_layout.elements())
+    {
+      glBindVertexBuffer(binding_index,
+                         vertex_buffer->id(),
+                         offset,
+                         vertex_buffer_layout_element.stride);
+      ++binding_index;
+      offset += vertex_buffer_layout_element.stride;
+    }
+  }
 }

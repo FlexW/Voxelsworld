@@ -8,4 +8,5 @@ target_sources(gl PRIVATE
   gl_shader.cpp
   gl_index_buffer.cpp
   gl_vertex_buffer.cpp
+  gl_texture.cpp
   )

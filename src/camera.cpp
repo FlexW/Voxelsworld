@@ -1,5 +1,7 @@
 #include "camera.hpp"
 
+#include <iostream>
+
 Camera::Camera(const glm::vec3 &position,
                const glm::vec3 &world_up,
                const float      yaw,
@@ -93,12 +95,14 @@ void Camera::update_camera_vectors()
   f.y    = sin(glm::radians(pitch_));
   f.z    = sin(glm::radians(yaw_)) * cos(glm::radians(pitch_));
   front_ = glm::normalize(f);
+  std::cout << "Front:" << glm::to_string(front_) << std::endl;
 
   // Also re-calculate the Right and Up vector
   // normalize the vectors, because their length
   // gets closer to 0 the more you look up or down
   // which results in slower movement.
   right_ = glm::normalize(glm::cross(front_, world_up_));
+  std::cout << "Right:" << glm::to_string(right_) << std::endl;
 
   up_ = glm::normalize(glm::cross(right_, front_));
 }
