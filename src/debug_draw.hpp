@@ -15,6 +15,8 @@ public:
   void
   draw_line(const glm::vec3 &from, const glm::vec3 &to, const glm::vec3 &color);
 
+  void draw_line(const std::vector<glm::vec3> &line, const glm::vec3 &color);
+
   void submit(const glm::mat4 &view_matrix, const glm::mat4 &projection_matrix);
 
 private:

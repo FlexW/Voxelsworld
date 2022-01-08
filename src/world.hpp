@@ -20,7 +20,9 @@ public:
 
   void draw(GlShader &shader);
 
-  [[nodiscard]] bool is_block(int x, int y, int z) const;
+  [[nodiscard]] bool is_block(const glm::ivec3 &world_position) const;
+
+  bool remove_block(const glm::vec3 &position);
 
 private:
   std::array<std::array<Chunk, grid_size>, grid_size> chunks_;
@@ -29,9 +31,16 @@ private:
 
   std::unique_ptr<GlTexture> texture_{};
 
+  bool is_chunk(const glm::ivec3 &position) const;
+
+  glm::ivec3
+  chunk_position_to_storage_position(const glm::ivec3 &position) const;
+
+  bool is_chunk_under_position(const glm::ivec3 &world_positon) const;
+
   Chunk       &chunk_under_position(const glm::vec3 &position);
   const Chunk &chunk_under_position(const glm::vec3 &position) const;
 
-  Chunk       &chunk(int x, int z);
-  const Chunk &chunk(int x, int z) const;
+  Chunk       &chunk(const glm::ivec3 &position);
+  const Chunk &chunk(const glm::ivec3 &position) const;
 };

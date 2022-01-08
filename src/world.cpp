@@ -11,32 +11,77 @@
 
 namespace
 {
-constexpr int t = 4;
+constexpr int t = 8;
 
-std::pair<int, int> position_to_chunk_position(const glm::vec3 &position)
+glm::ivec3
+player_position_to_world_block_position(const glm::vec3 &player_position)
 {
-  auto x = position.x;
-  auto z = position.z;
-  if (x < 0)
+  glm::ivec3 block_position{player_position.x,
+                            player_position.y,
+                            player_position.z};
+  if (player_position.x < 0)
   {
-    x = std::ceil(std::abs(x) / static_cast<float>(Chunk::width));
-    x *= -1.0f;
+    block_position.x -= 1;
   }
-  else
+  if (player_position.y < 0)
   {
-    x = std::floor(x / static_cast<float>(Chunk::width));
+    block_position.y -= 1;
   }
-  if (z < 0)
+  if (player_position.z < 0)
   {
-    z = std::ceil(std::abs(z) / static_cast<float>(Chunk::width));
-    z *= -1.0f;
-  }
-  else
-  {
-    z = std::floor(z / static_cast<float>(Chunk::width));
+    block_position.z -= 1;
   }
 
-  return {static_cast<int>(x), static_cast<int>(z)};
+  return block_position;
+}
+
+std::pair<glm::ivec3, glm::ivec3>
+world_position_to_chunk_position(const glm::ivec3 &world_position)
+{
+  glm::ivec3 chunk_position{world_position.x / Chunk::width,
+                            world_position.y / Chunk::height,
+                            world_position.z / Chunk::width};
+
+  glm::ivec3 block_position{world_position.x - chunk_position.x * Chunk::width,
+                            world_position.y - chunk_position.y * Chunk::height,
+                            world_position.z - chunk_position.z * Chunk::width};
+
+  if (block_position.x < 0)
+  {
+    block_position.x += Chunk::width;
+  }
+  if (block_position.y < 0)
+  {
+    block_position.y += Chunk::height;
+  }
+  if (block_position.z < 0)
+  {
+    block_position.z += Chunk::width;
+  }
+
+  if (world_position.x < 0 && world_position.x % Chunk::width != 0)
+  {
+    chunk_position.x -= 1;
+  }
+  if (world_position.y < 0 && world_position.y % Chunk::height != 0)
+  {
+    chunk_position.y -= 1;
+  }
+  if (world_position.z < 0 && world_position.z % Chunk::width != 0)
+  {
+    chunk_position.z -= 1;
+  }
+
+  return {chunk_position, block_position};
+}
+
+glm::ivec3 position_to_chunk_position(const glm::vec3 &position)
+{
+  const auto block_position = player_position_to_world_block_position(position);
+
+  const auto [chunk_position, _] =
+      world_position_to_chunk_position(block_position);
+  return chunk_position;
 }
 
 [[nodiscard]] std::unique_ptr<GlTexture>
@@ -76,57 +121,57 @@ void World::set_player_position(const glm::vec3 &position)
   player_position_ = position;
 
   // Generate chunks if needed
-  const auto [current_chunk_position_x, current_chunk_position_z] =
-      position_to_chunk_position(position);
+  const auto current_chunk_position = position_to_chunk_position(position);
 
-  std::vector<glm::ivec2> need_mesh_generation;
+  std::vector<glm::ivec3> need_mesh_generation;
 
-  for (int x = current_chunk_position_x - t; x <= current_chunk_position_x + t;
+  for (int x = current_chunk_position.x - t; x <= current_chunk_position.x + t;
        ++x)
   {
-    for (int z = current_chunk_position_z - t;
-         z <= current_chunk_position_z + t;
+    for (int z = current_chunk_position.z - t;
+         z <= current_chunk_position.z + t;
          ++z)
     {
       // FIXME: This will fail for border chunks
-      auto &c = chunk(x, z);
+      auto &c = chunk(glm::ivec3{x, 0, z});
       if (!c.is_generated())
       {
-        c.generate(glm::vec3(x, 0, z), *this);
-        need_mesh_generation.emplace_back(x, z);
+        const glm::ivec3 pos{x, 0, z};
+        c.generate(pos, *this);
+        need_mesh_generation.emplace_back(pos);
       }
     }
   }
 
   for (const auto &pos : need_mesh_generation)
   {
-    auto &c = chunk(pos.x, pos.y);
+    auto &c = chunk(pos);
     c.generate_mesh(*this);
 
-    // Regenarate neigbours if needed
+    // Regenarate neighbours if needed
     {
-      auto &c = chunk(pos.x - 1, pos.y);
+      auto &c = chunk(glm::ivec3{pos.x - 1, pos.y, pos.z});
       if (c.is_generated() && c.is_mesh_generated())
       {
         c.regenerate_mesh(*this);
       }
     }
     {
-      auto &c = chunk(pos.x, pos.y - 1);
+      auto &c = chunk(glm::ivec3{pos.x, pos.y, pos.z - 1});
       if (c.is_generated() && c.is_mesh_generated())
       {
         c.regenerate_mesh(*this);
       }
     }
     {
-      auto &c = chunk(pos.x + 1, pos.y);
+      auto &c = chunk(glm::ivec3{pos.x + 1, pos.y, pos.z});
       if (c.is_generated() && c.is_mesh_generated())
       {
         c.regenerate_mesh(*this);
       }
     }
     {
-      auto &c = chunk(pos.x, pos.y + 1);
+      auto &c = chunk(glm::ivec3{pos.x, pos.y, pos.z + 1});
       if (c.is_generated() && c.is_mesh_generated())
       {
         c.regenerate_mesh(*this);
@@ -138,57 +183,65 @@ void World::set_player_position(const glm::vec3 &position)
 
 Chunk &World::chunk_under_position(const glm::vec3 &position)
 {
-  const auto [x, z] = position_to_chunk_position(position);
-  return chunk(x, z);
+  const auto chunk_position = position_to_chunk_position(position);
+  return chunk(chunk_position);
 }
 
 const Chunk &World::chunk_under_position(const glm::vec3 &position) const
 {
-  const auto [x, z] = position_to_chunk_position(position);
-  return chunk(x, z);
+  const auto chunk_position = position_to_chunk_position(position);
+  return chunk(chunk_position);
 }
 
-Chunk &World::chunk(int x, int z)
+glm::ivec3
+World::chunk_position_to_storage_position(const glm::ivec3 &position) const
 {
   static constexpr int half_grid_size = grid_size / 2;
 
-  const auto real_x = x + half_grid_size;
-  const auto real_z = z + half_grid_size;
+  const auto real_x = position.x + half_grid_size;
+  const auto real_z = position.z + half_grid_size;
 
-  assert(0 <= real_x < chunks_.size());
-  assert(0 <= real_z < chunks_[x].size());
-
-  return chunks_[real_x][real_z];
+  return {real_x, position.y, real_z};
 }
 
-const Chunk &World::chunk(int x, int z) const
+bool World::is_chunk(const glm::ivec3 &position) const
 {
-  static constexpr int half_grid_size = grid_size / 2;
+  const auto storage_position = chunk_position_to_storage_position(position);
 
-  const auto real_x = x + half_grid_size;
-  const auto real_z = z + half_grid_size;
+  return ((storage_position.y == 0) &&
+          (0 <= storage_position.x < chunks_.size()) &&
+          (0 <= storage_position.z < chunks_[storage_position.x].size()));
+}
 
-  assert(0 <= real_x < chunks_.size());
-  assert(0 <= real_z < chunks_[x].size());
+Chunk &World::chunk(const glm::ivec3 &position)
+{
+  assert(is_chunk(position));
+  const auto storage_position = chunk_position_to_storage_position(position);
+  return chunks_[storage_position.x][storage_position.z];
+}
 
-  return chunks_[real_x][real_z];
+const Chunk &World::chunk(const glm::ivec3 &position) const
+{
+  assert(is_chunk(position));
+  const auto storage_position = chunk_position_to_storage_position(position);
+  return chunks_[storage_position.x][storage_position.z];
 }
 
 void World::draw(GlShader &shader)
 {
 
-  const auto [current_chunk_position_x, current_chunk_position_z] =
+  const auto current_chunk_position =
       position_to_chunk_position(player_position_);
 
-  for (int x = current_chunk_position_x - t; x <= current_chunk_position_x + t;
+  for (int x = current_chunk_position.x - t; x <= current_chunk_position.x + t;
        ++x)
   {
-    for (int z = current_chunk_position_z - t;
-         z <= current_chunk_position_z + t;
+    for (int z = current_chunk_position.z - t;
+         z <= current_chunk_position.z + t;
          ++z)
     {
       // FIXME: This will fail for border chunks
-      auto &c = chunk(x, z);
+      auto &c = chunk(glm::ivec3{x, 0, z});
       assert(c.is_generated());
       // Set model matrix
       const auto chunk_model_matrix =
@@ -208,20 +261,47 @@ void World::draw(GlShader &shader)
   }
 }
 
-bool World::is_block(int x, int y, int z) const
+bool World::is_chunk_under_position(const glm::ivec3 &world_position) const
 {
-  const auto &chunk = chunk_under_position(glm::vec3(x, y, z));
-  if (!chunk.is_generated())
+  const auto [chunk_position, _] =
+      world_position_to_chunk_position(world_position);
+
+  return is_chunk(chunk_position);
+}
+
+bool World::is_block(const glm::ivec3 &world_position) const
+{
+  const auto [chunk_position, block_position] =
+      world_position_to_chunk_position(world_position);
+
+  if (!is_chunk(chunk_position))
   {
     return false;
   }
 
-  const auto chunk_position = chunk.position();
-  const auto cx             = chunk_position.x * Chunk::width;
-  const auto cz             = chunk_position.z * Chunk::width;
-  x                         = x - cx;
-  z                         = z - cz;
+  auto &c = chunk(chunk_position);
+  const auto block_type = c.block_type(block_position);
 
-  const auto block_type = chunk.block_type(x, y, z);
   return block_type != Block::Type::Air;
+}
+
+bool World::remove_block(const glm::vec3 &position)
+{
+  const auto block_position = player_position_to_world_block_position(position);
+
+  if (!is_chunk_under_position(block_position))
+  {
+    std::cout << "No chunk found under " << position << std::endl;
+    return false;
+  }
+
+  const auto [chunk_position, block_in_chunk_position] =
+      world_position_to_chunk_position(block_position);
+
+  auto &c = chunk(chunk_position);
+
+  std::cout << "Chunk positon: " << c.position() << std::endl;
+  std::cout << "Block pos in chunk: " << block_in_chunk_position << std::endl;
+
+  return c.remove_block(*this, block_in_chunk_position);
 }

@@ -1,15 +1,16 @@
 // clang-format off
-#include "camera.hpp"
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+// clang-format on
+
 #include "debug_draw.hpp"
 #include "gl/gl_index_buffer.hpp"
 #include "gl/gl_shader.hpp"
 #include "gl/gl_vertex_buffer.hpp"
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/gtx/string_cast.hpp"
+#include "player.hpp"
 #include "world.hpp"
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-// clang-format on
 
 #include <chrono>
 #include <cstdlib>
@@ -23,7 +24,7 @@ namespace
 constexpr auto opengl_version_major = 4;
 constexpr auto opengl_version_minor = 6;
 
-constexpr auto opengl_debug = true;
+constexpr auto opengl_debug = false;
 
 auto window_width  = 1280;
 auto window_height = 720;
@@ -160,7 +161,7 @@ void gl_dump_info()
       "-------------------------------------------------------------\n");
 }
 
-Camera camera;
+Player player;
 
 void window_framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {
@@ -208,38 +209,14 @@ void key_callback(GLFWwindow *window,
   }
 }
 
+void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
+{
+  player.on_mouse_button(button, action, mods);
+}
+
 void mouse_movement_callback(GLFWwindow *window, double x, double y)
 {
-
-  static bool   mouse_first_move = true;
-  static double mouse_last_x     = 0.0;
-  static double mouse_last_y     = 0.0;
-  static double mouse_offset_x   = 0.0;
-  static double mouse_offset_y   = 0.0;
-
-  double x_offset = 0.0;
-  double y_offset = 0.0;
-
-  if (mouse_first_move)
-  {
-    mouse_last_x = x;
-    mouse_last_y = y;
-
-    mouse_first_move = false;
-  }
-  else
-  {
-    x_offset = x - mouse_last_x;
-    y_offset = mouse_last_y - y;
-
-    mouse_offset_x = x_offset;
-    mouse_offset_y = y_offset;
-
-    mouse_last_x = x;
-    mouse_last_y = y;
-  }
-
-  camera.process_rotation(x_offset, y_offset);
+  player.on_mouse_movement(x, y);
 }
 } // namespace
 
@@ -285,6 +262,7 @@ int main()
 
   glfwSetFramebufferSizeCallback(window, window_framebuffer_size_callback);
   glfwSetCursorPosCallback(window, mouse_movement_callback);
+  glfwSetMouseButtonCallback(window, mouse_button_callback);
   glfwSetKeyCallback(window, key_callback);
   glfwSetWindowCloseCallback(window, window_close_callback);
 
@@ -365,29 +343,14 @@ int main()
           1000.0;
 
       // Process movement
-      if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-      {
-        camera.process_movement(CameraMovement::Forward, elapsed_time_ms);
-      }
-      if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-      {
-        camera.process_movement(CameraMovement::Backward, elapsed_time_ms);
-      }
-      if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-      {
-        camera.process_movement(CameraMovement::Left, elapsed_time_ms);
-      }
-      if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-      {
-        camera.process_movement(CameraMovement::Right, elapsed_time_ms);
-      }
+      player.update(window, *world, *debug_draw, elapsed_time_ms);
 
       if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
       {
         break;
       }
 
-      world->set_player_position(camera.position());
+      world->set_player_position(player.position());
       // std::cout << "Position: " << glm::to_string(camera.position())
       //           << std::endl;
 
@@ -403,7 +366,7 @@ int main()
                             glm::vec3(0.0f, 0.0f, 1.0f));
 
       const auto projection_matrix =
-          glm::perspective(glm::radians(camera.zoom()),
+          glm::perspective(glm::radians(player.zoom()),
                            static_cast<float>(window_width) / window_height,
                            camera_near,
                            camera_far);
@@ -416,7 +379,7 @@ int main()
         // Draw world
         shader.bind();
         shader.set_uniform("model_matrix", glm::mat4(1.0f));
-        shader.set_uniform("view_matrix", camera.view_matrix());
+        shader.set_uniform("view_matrix", player.view_matrix());
         shader.set_uniform("projection_matrix", projection_matrix);
 
         // Lights
@@ -433,7 +396,7 @@ int main()
         shader.unbind();
 
         // Debug draw
-        debug_draw->submit(camera.view_matrix(), projection_matrix);
+        debug_draw->submit(player.view_matrix(), projection_matrix);
       }
 
       glfwSwapBuffers(window);

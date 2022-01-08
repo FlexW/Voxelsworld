@@ -21,6 +21,9 @@ void Chunk::generate(const glm::vec3 &position, const World &world)
                          static_cast<int>(position.y),
                          static_cast<int>(position.z));
 
+  // blocks_[0][0][0].set_type(Block::Type::Grass);
+  // blocks_[1][0][0].set_type(Block::Type::Grass);
+
   for (int x = 0; x < blocks_.size(); ++x)
   {
     for (int z = 0; z < blocks_[x].size(); ++z)
@@ -34,14 +37,14 @@ void Chunk::generate(const glm::vec3 &position, const World &world)
         }
         else
         {
-          if (y == 1 && x % 2 == 0 && z % 2 == 0)
-          {
-            block.set_type(Block::Type::Grass);
-          }
-          else
-          {
-            block.set_type(Block::Type::Air);
-          }
+          // if (y == 1 && x % 2 == 0 && z % 2 == 0)
+          // {
+          //   block.set_type(Block::Type::Grass);
+          // }
+          // else
+          // {
+          //   block.set_type(Block::Type::Air);
+          // }
         }
       }
     }
@@ -81,52 +84,24 @@ void Chunk::generate(const glm::vec3 &position, const World &world)
   return is_mesh_generated_;
 }
 
-bool Chunk::is_block(int x, int y, int z) const
+bool Chunk::is_block(const glm::ivec3 &position) const
 {
-  if (x < 0 || x >= blocks_.size())
-  {
-    return false;
-  }
-  if (z < 0 || z >= blocks_[z].size())
-  {
-    return false;
-  }
-  if (y < 0 || y >= blocks_[x][z].size())
+  if (!is_valid_block_position(position))
   {
     return false;
   }
 
-  return blocks_[x][z][y].type() != Block::Type::Air;
+  return blocks_[position.x][position.z][position.y].type() != Block::Type::Air;
 }
 
-bool Chunk::is_block(int x, int y, int z, const World &world) const
+bool Chunk::is_block(const glm::ivec3 &position, const World &world) const
 {
-  if (x < 0 || x >= blocks_.size())
+  if (is_valid_block_position(position))
   {
-    // if (x < 0)
-    // {
-    //   x = Chunk::width + x;
-    // }
-    x = position_.x * Chunk::width + x;
-    z = position_.z * Chunk::width + z;
-    return world.is_block(x, y, z);
+    return is_block(position);
   }
-  if (z < 0 || z >= blocks_[z].size())
-  {
-    // if (z < 0)
-    // {
-    //   z = Chunk::width + z;
-    // }
-    x = position_.x * Chunk::width + x;
-    z = position_.z * Chunk::width + z;
-    return world.is_block(x, y, z);
-  }
-  if (y < 0 || y >= blocks_[x][z].size())
-  {
-    return false;
-  }
-
-  return blocks_[x][z][y].type() != Block::Type::Air;
+  const auto world_position = block_position_to_world_position(position);
+  return world.is_block(world_position);
 }
 
 void Chunk::fill_mesh_data(const World &world)
@@ -147,18 +122,18 @@ void Chunk::fill_mesh_data(const World &world)
         {
           continue;
         }
-        // Back
-        if (!is_block(x, y, z + 1, world))
+        // Front
+        if (!is_block(glm::ivec3{x, y, z + 1}, world))
         {
-          positions.emplace_back(x + 0.0f, y + 1.0f, z + 0.0f);
-          positions.emplace_back(x + 0.0f, y + 0.0f, z + 0.0f);
-          positions.emplace_back(x + 1.0f, y + 0.0f, z + 0.0f);
-          positions.emplace_back(x + 1.0f, y + 1.0f, z + 0.0f);
+          positions.emplace_back(x + 0.0f, y + 1.0f, z + 1.0f);
+          positions.emplace_back(x + 0.0f, y + 0.0f, z + 1.0f);
+          positions.emplace_back(x + 1.0f, y + 0.0f, z + 1.0f);
+          positions.emplace_back(x + 1.0f, y + 1.0f, z + 1.0f);
 
-          normals.emplace_back(0.0f, 0.0f, -1.0f);
-          normals.emplace_back(0.0f, 0.0f, -1.0f);
-          normals.emplace_back(0.0f, 0.0f, -1.0f);
-          normals.emplace_back(0.0f, 0.0f, -1.0f);
+          normals.emplace_back(0.0f, 0.0f, 1.0f);
+          normals.emplace_back(0.0f, 0.0f, 1.0f);
+          normals.emplace_back(0.0f, 0.0f, 1.0f);
+          normals.emplace_back(0.0f, 0.0f, 1.0f);
 
           tex_coords.emplace_back(0.0f, 1.0f);
           tex_coords.emplace_back(0.0f, 0.0f);
@@ -174,18 +149,18 @@ void Chunk::fill_mesh_data(const World &world)
           current_index += 4;
         }
 
-        // Front
-        if (!is_block(x, y, z - 1, world))
+        // Back
+        if (!is_block(glm::ivec3{x, y, z - 1}, world))
         {
-          positions.emplace_back(x + 0.0f, y + 1.0f, z + -1.0f);
-          positions.emplace_back(x + 1.0f, y + 1.0f, z + -1.0f);
-          positions.emplace_back(x + 1.0f, y + 0.0f, z + -1.0f);
-          positions.emplace_back(x + 0.0f, y + 0.0f, z + -1.0f);
+          positions.emplace_back(x + 0.0f, y + 1.0f, z + 0.0f);
+          positions.emplace_back(x + 1.0f, y + 1.0f, z + 0.0f);
+          positions.emplace_back(x + 1.0f, y + 0.0f, z + 0.0f);
+          positions.emplace_back(x + 0.0f, y + 0.0f, z + 0.0f);
 
-          normals.emplace_back(0.0f, 0.0f, 1.0f);
-          normals.emplace_back(0.0f, 0.0f, 1.0f);
-          normals.emplace_back(0.0f, 0.0f, 1.0f);
-          normals.emplace_back(0.0f, 0.0f, 1.0f);
+          normals.emplace_back(0.0f, 0.0f, -1.0f);
+          normals.emplace_back(0.0f, 0.0f, -1.0f);
+          normals.emplace_back(0.0f, 0.0f, -1.0f);
+          normals.emplace_back(0.0f, 0.0f, -1.0f);
 
           tex_coords.emplace_back(1.0f, 1.0f);
           tex_coords.emplace_back(0.0f, 1.0f);
@@ -202,12 +177,12 @@ void Chunk::fill_mesh_data(const World &world)
         }
 
         // Top
-        if (!is_block(x, y + 1, z, world))
+        if (!is_block(glm::ivec3{x, y + 1, z}, world))
         {
-          positions.emplace_back(x + 0.0f, y + 1.0f, z + 0.0f);
+          positions.emplace_back(x + 0.0f, y + 1.0f, z + 1.0f);
+          positions.emplace_back(x + 1.0f, y + 1.0f, z + 1.0f);
           positions.emplace_back(x + 1.0f, y + 1.0f, z + 0.0f);
-          positions.emplace_back(x + 1.0f, y + 1.0f, z + -1.0f);
-          positions.emplace_back(x + 0.0f, y + 1.0f, z + -1.0f);
+          positions.emplace_back(x + 0.0f, y + 1.0f, z + 0.0f);
 
           normals.emplace_back(0.0f, 1.0f, 0.0f);
           normals.emplace_back(0.0f, 1.0f, 0.0f);
@@ -229,12 +204,12 @@ void Chunk::fill_mesh_data(const World &world)
         }
 
         // Bottom
-        if (!is_block(x, y - 1, z, world))
+        if (!is_block(glm::ivec3{x, y - 1, z}, world))
         {
+          positions.emplace_back(x + 0.0f, y + 0.0f, z + 1.0f);
           positions.emplace_back(x + 0.0f, y + 0.0f, z + 0.0f);
-          positions.emplace_back(x + 0.0f, y + 0.0f, z + -1.0f);
-          positions.emplace_back(x + 1.0f, y + 0.0f, z + -1.0f);
           positions.emplace_back(x + 1.0f, y + 0.0f, z + 0.0f);
+          positions.emplace_back(x + 1.0f, y + 0.0f, z + 1.0f);
 
           normals.emplace_back(0.0f, -1.0f, 0.0f);
           normals.emplace_back(0.0f, -1.0f, 0.0f);
@@ -256,12 +231,12 @@ void Chunk::fill_mesh_data(const World &world)
         }
 
         // Left
-        if (!is_block(x - 1, y, z, world))
+        if (!is_block(glm::ivec3{x - 1, y, z}, world))
         {
-          positions.emplace_back(x + 0.0f, y + 0.0f, z + 0.0f);
+          positions.emplace_back(x + 0.0f, y + 0.0f, z + 1.0f);
+          positions.emplace_back(x + 0.0f, y + 1.0f, z + 1.0f);
           positions.emplace_back(x + 0.0f, y + 1.0f, z + 0.0f);
-          positions.emplace_back(x + 0.0f, y + 1.0f, z + -1.0f);
-          positions.emplace_back(x + 0.0f, y + 0.0f, z + -1.0f);
+          positions.emplace_back(x + 0.0f, y + 0.0f, z + 0.0f);
 
           normals.emplace_back(-1.0f, 0.0f, 0.0f);
           normals.emplace_back(-1.0f, 0.0f, 0.0f);
@@ -283,12 +258,12 @@ void Chunk::fill_mesh_data(const World &world)
         }
 
         // Right
-        if (!is_block(x + 1, y, z, world))
+        if (!is_block(glm::ivec3{x + 1, y, z}, world))
         {
+          positions.emplace_back(x + 1.0f, y + 0.0f, z + 1.0f);
           positions.emplace_back(x + 1.0f, y + 0.0f, z + 0.0f);
-          positions.emplace_back(x + 1.0f, y + 0.0f, z + -1.0f);
-          positions.emplace_back(x + 1.0f, y + 1.0f, z + -1.0f);
           positions.emplace_back(x + 1.0f, y + 1.0f, z + 0.0f);
+          positions.emplace_back(x + 1.0f, y + 1.0f, z + 1.0f);
 
           normals.emplace_back(1.0f, 0.0f, 0.0f);
           normals.emplace_back(1.0f, 0.0f, 0.0f);
@@ -373,11 +348,102 @@ void Chunk::draw(GlShader &shader)
 
 glm::ivec3 Chunk::position() const { return position_; }
 
-Block::Type Chunk::block_type(int x, int y, int z) const
+Block::Type Chunk::block_type(const glm::ivec3 &position) const
 {
-  assert(0 <= x && x < blocks_.size());
-  assert(0 <= z && z < blocks_[x].size());
-  assert(0 <= y && y < blocks_[x][z].size());
+  assert(
+      is_valid_block_position(glm::ivec3{position.x, position.y, position.z}));
 
-  return blocks_[x][z][y].type();
+  return blocks_[position.x][position.z][position.y].type();
+}
+
+bool Chunk::is_valid_block_position(const glm::ivec3 &position) const
+{
+  const auto x = position.x;
+  const auto y = position.y;
+  const auto z = position.z;
+
+  return ((0 <= x && x < blocks_.size()) && (0 <= z && z < blocks_[x].size()) &&
+          (0 <= y && y < blocks_[x][z].size()));
+}
+
+bool Chunk::remove_block(const World &world, const glm::ivec3 &position)
+{
+  std::cout << "Try to remove block: " << position << std::endl;
+  if (!is_valid_block_position(position))
+  {
+    std::cout << "Not a valid block" << std::endl;
+    return false;
+  }
+
+  auto &block = blocks_[position.x][position.z][position.y];
+
+  if (block.type() == Block::Type::Air)
+  {
+    std::cout << "Can not remove air block" << std::endl;
+    return false;
+  }
+
+  std::cout << "Remove block" << std::endl;
+  block.set_type(Block::Type::Air);
+  regenerate_mesh(world);
+
+  // TODO: Check if border block
+  // If border block check if neigbour block is solid
+  // If solid regenerate mesh of neigbour chunk
+
+  return true;
+}
+
+Block &Chunk::block(const glm::ivec3 &position)
+{
+  assert(is_valid_block_position(position));
+  return blocks_[position.x][position.z][position.y];
+}
+
+glm::ivec3
+Chunk::block_position_to_world_position(const glm::ivec3 &block_position) const
+{
+  // // FIXME: This won't work for value that are in abs bigger than
+  // Chunk::width
+  // // We need to account for out of bounds
+  const auto chunk_position      = position_;
+  const auto real_block_position = block_position;
+  // if (block_position.x < 0)
+  // {
+  //   chunk_position.x -= 1;
+  //   real_block_position.x = Chunk::width - 1;
+  // }
+  // if (block_position.x >= Chunk::width)
+  // {
+  //   chunk_position.x += 1;
+  //   real_block_position.x = 0;
+  // }
+
+  // if (block_position.y < 0)
+  // {
+  //   chunk_position.y -= 1;
+  //   real_block_position.y = Chunk::height - 1;
+  // }
+  // if (block_position.y >= Chunk::height)
+  // {
+  //   chunk_position.y += 1;
+  //   real_block_position.y = 0;
+  // }
+
+  // if (block_position.z < 0)
+  // {
+  //   chunk_position.z -= 1;
+  //   real_block_position.z = Chunk::width - 1;
+  // }
+  // if (block_position.z >= Chunk::width)
+  // {
+  //   chunk_position.z += 1;
+  //   real_block_position.z = 0;
+  // }
+
+  const auto x = real_block_position.x + chunk_position.x * Chunk::width;
+  const auto z = real_block_position.z + chunk_position.z * Chunk::width;
+  const auto y = real_block_position.y + chunk_position.y * Chunk::height;
+
+  return {x, y, z};
 }

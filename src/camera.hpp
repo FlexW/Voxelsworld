@@ -36,13 +36,22 @@ public:
 
   float zoom() const { return zoom_; }
 
+  void      set_position(const glm::vec3 &value);
   glm::vec3 position() const { return position_; }
+
+  void set_free_fly(bool value);
+
+  glm::vec3 right() const;
+  glm::vec3 front_movement() const;
+  glm::vec3 front() const;
 
 private:
   glm::vec3 position_;
   glm::vec3 front_;
+  glm::vec3 front_movement_;
   glm::vec3 up_;
   glm::vec3 right_;
+  glm::vec3 right_movement_;
   glm::vec3 world_up_;
 
   float yaw_;
@@ -51,6 +60,8 @@ private:
   float movement_speed_;
   float mouse_sensitivity_;
   float zoom_;
+
+  bool free_fly_ = true;
 
   void update_camera_vectors();
 };

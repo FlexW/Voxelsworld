@@ -10,6 +10,8 @@ target_sources(app PRIVATE
   chunk.cpp
   block.cpp
   debug_draw.cpp
+  player.cpp
+  ray.cpp
   )
 
 target_link_libraries(app PRIVATE

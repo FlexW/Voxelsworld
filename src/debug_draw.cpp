@@ -30,6 +30,19 @@ void DebugDraw::draw_line(const glm::vec3 &from,
   colors_.push_back(color);
 }
 
+void DebugDraw::draw_line(const std::vector<glm::vec3> &line,
+                          const glm::vec3              &color)
+{
+  for (int i = 1; i < line.size(); ++i)
+  {
+    lines_.push_back(line[i - 1]);
+    colors_.push_back(color);
+
+    lines_.push_back(line[i]);
+    colors_.push_back(color);
+  }
+}
+
 void DebugDraw::submit(const glm::mat4 &view_matrix,
                        const glm::mat4 &projection_matrix)
 {

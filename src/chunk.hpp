@@ -28,7 +28,9 @@ public:
 
   glm::ivec3 position() const;
 
-  Block::Type block_type(int x, int y, int z) const;
+  Block::Type block_type(const glm::ivec3 &position) const;
+
+  bool remove_block(const World &world, const glm::ivec3 &position);
 
 private:
   std::vector<const GlVertexBuffer *> vertex_buffers_;
@@ -45,8 +47,16 @@ private:
 
   std::unique_ptr<GlIndexBuffer> index_buffer_{};
 
-  [[nodiscard]] bool is_block(int x, int y, int z) const;
-  [[nodiscard]] bool is_block(int x, int y, int z, const World &world) const;
+  [[nodiscard]] bool is_block(const glm::ivec3 &position) const;
+  [[nodiscard]] bool is_block(const glm::ivec3 &position,
+                              const World      &world) const;
 
   void fill_mesh_data(const World &world);
+
+  bool is_valid_block_position(const glm::ivec3 &position) const;
+
+  Block &block(const glm::ivec3 &position);
+
+  glm::ivec3
+  block_position_to_world_position(const glm::ivec3 &block_position) const;
 };

@@ -28,13 +28,15 @@ void Camera::process_movement(const CameraMovement direction,
 {
   const float velocity = movement_speed_ * delta_time;
 
+  const auto front = free_fly_ ? front_ : front_movement_;
+
   if (direction == CameraMovement::Forward)
   {
-    position_ += front_ * velocity;
+    position_ += front * velocity;
   }
   if (direction == CameraMovement::Backward)
   {
-    position_ -= front_ * velocity;
+    position_ -= front * velocity;
   }
   if (direction == CameraMovement::Left)
   {
@@ -95,14 +97,27 @@ void Camera::update_camera_vectors()
   f.y    = sin(glm::radians(pitch_));
   f.z    = sin(glm::radians(yaw_)) * cos(glm::radians(pitch_));
   front_ = glm::normalize(f);
-  std::cout << "Front:" << glm::to_string(front_) << std::endl;
+
+  f.x             = cos(glm::radians(yaw_)) * cos(glm::radians(0.0f));
+  f.y             = sin(glm::radians(0.0f));
+  f.z             = sin(glm::radians(yaw_)) * cos(glm::radians(0.0f));
+  front_movement_ = glm::normalize(f);
 
   // Also re-calculate the Right and Up vector
   // normalize the vectors, because their length
   // gets closer to 0 the more you look up or down
   // which results in slower movement.
   right_ = glm::normalize(glm::cross(front_, world_up_));
-  std::cout << "Right:" << glm::to_string(right_) << std::endl;
 
   up_ = glm::normalize(glm::cross(right_, front_));
 }
+
+void Camera::set_position(const glm::vec3 &value) { position_ = value; }
+
+void Camera::set_free_fly(bool value) { free_fly_ = value; }
+
+glm::vec3 Camera::front_movement() const { return front_movement_; }
+
+glm::vec3 Camera::right() const { return right_; }
+
+glm::vec3 Camera::front() const { return front_; }
