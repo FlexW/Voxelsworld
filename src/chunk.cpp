@@ -31,20 +31,9 @@ void Chunk::generate(const glm::vec3 &position, const World &world)
       for (int y = 0; y < blocks_[x][z].size(); ++y)
       {
         auto &block = blocks_[x][z][y];
-        if (y == 0)
+        if (y == 0 || (y == 1 && x % 2 == 0 && z % 2 == 0))
         {
           block.set_type(Block::Type::Grass);
-        }
-        else
-        {
-          // if (y == 1 && x % 2 == 0 && z % 2 == 0)
-          // {
-          //   block.set_type(Block::Type::Grass);
-          // }
-          // else
-          // {
-          //   block.set_type(Block::Type::Air);
-          // }
         }
       }
     }

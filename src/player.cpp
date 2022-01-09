@@ -69,13 +69,26 @@ void Player::update(GLFWwindow *window,
     }
   }
 
+  const auto is_move_allowed =
+      [this, &position, &world](const glm::vec3 &direction)
+  {
+    for (Ray ray(position, camera_.front_movement()); ray.length() < 0.1f;
+         ray.step(0.01f))
+    {
+      const auto point = ray.end();
+      if (world.is_block(point))
+      {
+        return false;
+      }
+    }
+    return true;
+  };
+
   if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
   {
     if (!free_fly_)
     {
-      const auto new_position = position + (camera_.front_movement() * 0.5f);
-      if (!world.is_block(
-              glm::ivec3{new_position.x, new_position.y, new_position.z}))
+      if (is_move_allowed(camera_.front_movement()))
       {
         camera_.process_movement(CameraMovement::Forward, delta_time);
       }
@@ -89,9 +102,7 @@ void Player::update(GLFWwindow *window,
   {
     if (!free_fly_)
     {
-      const auto new_position = position - (camera_.front_movement() * 0.5f);
-      if (!world.is_block(
-              glm::ivec3{new_position.x, new_position.y, new_position.z}))
+      if (is_move_allowed(-camera_.front_movement()))
       {
         camera_.process_movement(CameraMovement::Backward, delta_time);
       }
@@ -105,9 +116,7 @@ void Player::update(GLFWwindow *window,
   {
     if (!free_fly_)
     {
-      const auto new_position = position - (camera_.right() * 0.5f);
-      if (!world.is_block(
-              glm::ivec3{new_position.x, new_position.y, new_position.z}))
+      if (is_move_allowed(camera_.right()))
       {
         camera_.process_movement(CameraMovement::Left, delta_time);
       }
@@ -121,9 +130,7 @@ void Player::update(GLFWwindow *window,
   {
     if (!free_fly_)
     {
-      const auto new_position = position + (camera_.right() * 0.5f);
-      if (!world.is_block(
-              glm::ivec3{new_position.x, new_position.y, new_position.z}))
+      if (is_move_allowed(-camera_.right()))
       {
         camera_.process_movement(CameraMovement::Right, delta_time);
       }
