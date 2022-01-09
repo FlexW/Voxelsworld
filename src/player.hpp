@@ -44,7 +44,6 @@ private:
 
   bool                   do_pick_block_  = false;
   bool                   do_place_block_ = false;
-  std::vector<glm::vec3> block_pick_debug_;
 
   void jump();
 };

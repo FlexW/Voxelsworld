@@ -13,6 +13,7 @@ target_sources(app PRIVATE
   player.cpp
   ray.cpp
   aabb.cpp
+  texture_atlas.cpp
   )
 
 target_link_libraries(app PRIVATE

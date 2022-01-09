@@ -148,7 +148,6 @@ void Player::update(GLFWwindow *window,
   // Block picking
   if (do_pick_block_)
   {
-    block_pick_debug_.clear();
     std::cout << "Start block picking. Position " << camera_.position()
               << " Front: " << camera_.front() << std::endl;
     do_pick_block_ = false;
@@ -156,7 +155,6 @@ void Player::update(GLFWwindow *window,
          ray.step(0.5f))
     {
       const auto point = ray.end();
-      block_pick_debug_.push_back(point);
       std::cout << "Ray end: " << point << std::endl;
       if (world.remove_block(point))
       {
@@ -177,11 +175,6 @@ void Player::update(GLFWwindow *window,
         break;
       }
     }
-  }
-
-  if (block_pick_debug_.size() > 0)
-  {
-    debug_draw.draw_line(block_pick_debug_, glm::vec3{1.0f, 1.0f, 0.0f});
   }
 }
 

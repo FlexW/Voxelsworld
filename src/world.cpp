@@ -5,10 +5,11 @@
 #include "defer.hpp"
 #include "gl/gl_texture.hpp"
 
-#include <memory>
 #include <stb_image.h>
 
 #include <cassert>
+#include <filesystem>
+#include <memory>
 
 namespace
 {
@@ -113,7 +114,13 @@ load_texture(const std::filesystem::path &file_path)
 
 void World::init()
 {
-  texture_ = load_texture("data/test_texture.jpg");
+  const auto result = world_texure_atlas_.load("data/world_texture.png", 3, 1);
+  if (!result)
+  {
+    std::cerr << "Could not load world texture" << std::endl;
+    assert(0);
+  }
+  // texture_ = load_texture("data/test_texture.jpg");
   // texture_ = load_texture("data/awesomeface.png");
 }
 
@@ -254,8 +261,9 @@ void World::draw(GlShader &shader)
       // shader.set_uniform("in_diffuse_color", glm::vec3(0.34f, 0.49f, 0.27f));
       shader.set_uniform("is_diffuse_tex", true);
       glActiveTexture(GL_TEXTURE0);
-      glBindTexture(GL_TEXTURE_2D, texture_->id());
-      shader.set_uniform("in_diffuse_tex", static_cast<int>(texture_->id()));
+      glBindTexture(GL_TEXTURE_2D, world_texure_atlas_.texture_id());
+      shader.set_uniform("in_diffuse_tex",
+                         static_cast<int>(world_texure_atlas_.texture_id()));
       glBindTexture(GL_TEXTURE_2D, 0);
       c.draw(shader);
     }
@@ -280,7 +288,7 @@ bool World::is_block(const glm::ivec3 &world_position) const
     return false;
   }
 
-  auto &c = chunk(chunk_position);
+  auto      &c          = chunk(chunk_position);
   const auto block_type = c.block_type(block_position);
 
   return block_type != Block::Type::Air;
@@ -328,7 +336,7 @@ bool World::place_block(const Ray &ray)
 
   std::cout << "Test intersection with block" << block_position << std::endl;
 
-  Aabb aabb{block_position,
+  Aabb       aabb{block_position,
             glm::vec3{block_position.x + Block::width,
                       block_position.y + Block::height,
                       block_position.z + Block::width}};
@@ -361,4 +369,10 @@ void World::regenerate_chunk(const glm::ivec3 &chunk_position)
   }
   auto &c = chunk(chunk_position);
   c.regenerate_mesh(*this);
+}
+
+TextureAtlas::Coords World::world_texture_coords(int texture_width_index,
+                                                 int texture_height_index) const
+{
+  return world_texure_atlas_.get(texture_width_index, texture_height_index);
 }

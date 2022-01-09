@@ -3,10 +3,58 @@
 #include "gl/gl_index_buffer.hpp"
 #include "gl/gl_vertex_buffer.hpp"
 #include "math.hpp"
+#include "texture_atlas.hpp"
 #include "world.hpp"
 
 #include <limits>
 #include <memory>
+
+namespace
+{
+enum class BlockSide
+{
+  Top,
+  Bottom,
+  Left,
+  Right,
+  Front,
+  Back,
+};
+
+TextureAtlas::Coords block_type_to_texture_coords(Block::Type  type,
+                                                  BlockSide    block_side,
+                                                  const World &world)
+{
+  switch (type)
+  {
+  case Block::Type::Grass:
+  {
+    switch (block_side)
+    {
+    case BlockSide::Top:
+      return world.world_texture_coords(2, 0);
+    case BlockSide::Bottom:
+      return world.world_texture_coords(0, 0);
+    case BlockSide::Front:
+    case BlockSide::Back:
+    case BlockSide::Left:
+    case BlockSide::Right:
+      return world.world_texture_coords(1, 0);
+    }
+  }
+  case Block::Type::Dirt:
+  {
+    return world.world_texture_coords(0, 0);
+  }
+  case Block::Type::Air:
+    assert(0);
+    return {};
+  }
+  assert(0);
+  return {};
+}
+
+} // namespace
 
 [[nodiscard]] bool Chunk::is_generated() const { return is_generated_; }
 
@@ -31,7 +79,11 @@ void Chunk::generate(const glm::vec3 &position, const World &world)
       for (int y = 0; y < blocks_[x][z].size(); ++y)
       {
         auto &block = blocks_[x][z][y];
-        if (y == 0 /*|| (y == 1 && x % 2 == 0 && z % 2 == 0)*/)
+        if (y == 0)
+        {
+          block.set_type(Block::Type::Dirt);
+        }
+        if (y == 1 && x % 2 == 0 && z % 2 == 0)
         {
           block.set_type(Block::Type::Grass);
         }
@@ -124,10 +176,14 @@ void Chunk::fill_mesh_data(const World &world)
           normals.emplace_back(0.0f, 0.0f, 1.0f);
           normals.emplace_back(0.0f, 0.0f, 1.0f);
 
-          tex_coords.emplace_back(0.0f, 1.0f);
-          tex_coords.emplace_back(0.0f, 0.0f);
-          tex_coords.emplace_back(1.0f, 0.0f);
-          tex_coords.emplace_back(1.0f, 1.0f);
+          const auto coords =
+              block_type_to_texture_coords(blocks_[x][z][y].type(),
+                                           BlockSide::Front,
+                                           world);
+          tex_coords.emplace_back(coords.bottom_left);
+          tex_coords.emplace_back(coords.top_left);
+          tex_coords.emplace_back(coords.top_right);
+          tex_coords.emplace_back(coords.bottom_right);
 
           indices.push_back(current_index + 0);
           indices.push_back(current_index + 1);
@@ -151,10 +207,14 @@ void Chunk::fill_mesh_data(const World &world)
           normals.emplace_back(0.0f, 0.0f, -1.0f);
           normals.emplace_back(0.0f, 0.0f, -1.0f);
 
-          tex_coords.emplace_back(1.0f, 1.0f);
-          tex_coords.emplace_back(0.0f, 1.0f);
-          tex_coords.emplace_back(0.0f, 0.0f);
-          tex_coords.emplace_back(1.0f, 0.0f);
+          const auto coords =
+              block_type_to_texture_coords(blocks_[x][z][y].type(),
+                                           BlockSide::Back,
+                                           world);
+          tex_coords.emplace_back(coords.bottom_right);
+          tex_coords.emplace_back(coords.bottom_left);
+          tex_coords.emplace_back(coords.top_left);
+          tex_coords.emplace_back(coords.top_right);
 
           indices.push_back(current_index + 0);
           indices.push_back(current_index + 1);
@@ -178,10 +238,14 @@ void Chunk::fill_mesh_data(const World &world)
           normals.emplace_back(0.0f, 1.0f, 0.0f);
           normals.emplace_back(0.0f, 1.0f, 0.0f);
 
-          tex_coords.emplace_back(0.0f, 0.0f);
-          tex_coords.emplace_back(1.0f, 0.0f);
-          tex_coords.emplace_back(1.0f, 1.0f);
-          tex_coords.emplace_back(0.0f, 1.0f);
+          const auto coords =
+              block_type_to_texture_coords(blocks_[x][z][y].type(),
+                                           BlockSide::Top,
+                                           world);
+          tex_coords.emplace_back(coords.top_left);
+          tex_coords.emplace_back(coords.top_right);
+          tex_coords.emplace_back(coords.bottom_right);
+          tex_coords.emplace_back(coords.bottom_left);
 
           indices.push_back(current_index + 0);
           indices.push_back(current_index + 1);
@@ -205,10 +269,14 @@ void Chunk::fill_mesh_data(const World &world)
           normals.emplace_back(0.0f, -1.0f, 0.0f);
           normals.emplace_back(0.0f, -1.0f, 0.0f);
 
-          tex_coords.emplace_back(0.0f, 1.0f);
-          tex_coords.emplace_back(0.0f, 0.0f);
-          tex_coords.emplace_back(1.0f, 0.0f);
-          tex_coords.emplace_back(1.0f, 1.0f);
+          const auto coords =
+              block_type_to_texture_coords(blocks_[x][z][y].type(),
+                                           BlockSide::Bottom,
+                                           world);
+          tex_coords.emplace_back(coords.bottom_left);
+          tex_coords.emplace_back(coords.top_left);
+          tex_coords.emplace_back(coords.top_right);
+          tex_coords.emplace_back(coords.bottom_right);
 
           indices.push_back(current_index + 0);
           indices.push_back(current_index + 1);
@@ -232,10 +300,14 @@ void Chunk::fill_mesh_data(const World &world)
           normals.emplace_back(-1.0f, 0.0f, 0.0f);
           normals.emplace_back(-1.0f, 0.0f, 0.0f);
 
-          tex_coords.emplace_back(1.0f, 0.0f);
-          tex_coords.emplace_back(1.0f, 1.0f);
-          tex_coords.emplace_back(0.0f, 1.0f);
-          tex_coords.emplace_back(0.0f, 0.0f);
+          const auto coords =
+              block_type_to_texture_coords(blocks_[x][z][y].type(),
+                                           BlockSide::Left,
+                                           world);
+          tex_coords.emplace_back(coords.top_right);
+          tex_coords.emplace_back(coords.bottom_right);
+          tex_coords.emplace_back(coords.bottom_left);
+          tex_coords.emplace_back(coords.top_left);
 
           indices.push_back(current_index + 0);
           indices.push_back(current_index + 1);
@@ -259,10 +331,14 @@ void Chunk::fill_mesh_data(const World &world)
           normals.emplace_back(1.0f, 0.0f, 0.0f);
           normals.emplace_back(1.0f, 0.0f, 0.0f);
 
-          tex_coords.emplace_back(0.0f, 0.0f);
-          tex_coords.emplace_back(1.0f, 0.0f);
-          tex_coords.emplace_back(1.0f, 1.0f);
-          tex_coords.emplace_back(0.0f, 1.0f);
+          const auto coords =
+              block_type_to_texture_coords(blocks_[x][z][y].type(),
+                                           BlockSide::Right,
+                                           world);
+          tex_coords.emplace_back(coords.top_left);
+          tex_coords.emplace_back(coords.top_right);
+          tex_coords.emplace_back(coords.bottom_right);
+          tex_coords.emplace_back(coords.bottom_left);
 
           indices.push_back(current_index + 0);
           indices.push_back(current_index + 1);

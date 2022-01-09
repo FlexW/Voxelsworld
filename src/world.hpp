@@ -5,6 +5,7 @@
 #include "gl/gl_texture.hpp"
 #include "math.hpp"
 #include "ray.hpp"
+#include "texture_atlas.hpp"
 
 #include <array>
 #include <memory>
@@ -28,12 +29,16 @@ public:
 
   void regenerate_chunk(const glm::ivec3 &chunk_position);
 
+  TextureAtlas::Coords world_texture_coords(int texture_width_index,
+                                            int texture_height_index) const;
+
 private:
   std::array<std::array<Chunk, grid_size>, grid_size> chunks_;
 
   glm::vec3 player_position_ = glm::vec3(0.0f);
 
-  std::unique_ptr<GlTexture> texture_{};
+  TextureAtlas               world_texure_atlas_;
+  // std::unique_ptr<GlTexture> texture_{};
 
   bool is_chunk(const glm::ivec3 &position) const;
 

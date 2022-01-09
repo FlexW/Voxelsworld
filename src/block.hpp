@@ -9,6 +9,7 @@ public:
   enum class Type
   {
     Grass,
+    Dirt,
     Air,
   };
 
