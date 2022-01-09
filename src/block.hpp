@@ -10,6 +10,7 @@ public:
   {
     Grass,
     Dirt,
+    Water,
     Air,
   };
 

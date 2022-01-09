@@ -114,7 +114,7 @@ load_texture(const std::filesystem::path &file_path)
 
 void World::init()
 {
-  const auto result = world_texure_atlas_.load("data/world_texture.png", 3, 1);
+  const auto result = world_texure_atlas_.load("data/world_texture.png", 4, 1);
   if (!result)
   {
     std::cerr << "Could not load world texture" << std::endl;

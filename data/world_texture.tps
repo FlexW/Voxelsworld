@@ -178,6 +178,7 @@
             <key type="filename">dirt.png</key>
             <key type="filename">grass_side.png</key>
             <key type="filename">grass_top.png</key>
+            <key type="filename">water.jpg</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
                 <point_f>0.5,0.5</point_f>
@@ -198,6 +199,7 @@
             <filename>dirt.png</filename>
             <filename>grass_side.png</filename>
             <filename>grass_top.png</filename>
+            <filename>water.jpg</filename>
         </array>
         <key>ignoreFileList</key>
         <array/>

@@ -14,7 +14,7 @@ class World
 {
 public:
   // Should be an even number
-  static constexpr int grid_size = 32;
+  static constexpr int grid_size = 64;
 
   void init();
 

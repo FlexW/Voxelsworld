@@ -6,6 +6,7 @@
 #include "texture_atlas.hpp"
 #include "world.hpp"
 
+#include <cassert>
 #include <limits>
 #include <memory>
 
@@ -46,6 +47,10 @@ TextureAtlas::Coords block_type_to_texture_coords(Block::Type  type,
   {
     return world.world_texture_coords(0, 0);
   }
+  case Block::Type::Water:
+  {
+    return world.world_texture_coords(3, 0);
+  }
   case Block::Type::Air:
     assert(0);
     return {};
@@ -71,31 +76,23 @@ void Chunk::generate(const glm::vec3 &position, const World &world)
 
   std::cout << "Generate chunk: " << position_ << std::endl;
 
-  // blocks_[0][0][0].set_type(Block::Type::Grass);
-  // blocks_[1][0][0].set_type(Block::Type::Grass);
+  static constexpr auto c1 = 1.0f;
+  static constexpr auto c2 = 0.7f;
+  static constexpr auto c3 = 0.008f;
 
-  // for (int x = 0; x < blocks_.size(); ++x)
-  // {
-  //   for (int z = 0; z < blocks_[x].size(); ++z)
-  //   {
-  //     for (int y = 0; y < blocks_[x][z].size(); ++y)
-  //     {
-  //       auto &block = blocks_[x][z][y];
-  //       if (y == 0)
-  //       {
-  //         block.set_type(Block::Type::Dirt);
-  //       }
-  //       if (y == 1 && x % 2 == 0 && z % 2 == 0)
-  //       {
-  //         block.set_type(Block::Type::Grass);
-  //       }
-  //     }
-  //   }
-  // }
+  static constexpr auto div = 1.0f;
+  assert(0.0f <= div && div <= 1.0f);
 
-  // NOISE ---------------
+  static constexpr auto frequency1 = 0.0003f;
+  static constexpr auto frequency2 = 0.008f;
+  static constexpr auto frequency3 = 0.1f;
 
-  static constexpr auto frequency = 0.001f;
+  static constexpr auto e            = 11.3f;
+  static constexpr auto fudge_factor = 1.1f;
+
+  static constexpr auto water_level = 5.0f;
+
+  static constexpr auto terraces = 180.0f;
 
   for (int x = 0; x < blocks_.size(); ++x)
   {
@@ -107,15 +104,26 @@ void Chunk::generate(const glm::vec3 &position, const World &world)
       auto position_x = world_position.x + 0.5f;
       auto position_z = world_position.z + 0.5f;
 
-      const auto noise = glm::simplex(
-          glm::vec2{position_x * frequency, position_z * frequency});
-      const auto height =
-          static_cast<int>(((noise + 1.0f) / 2.0f) * Chunk::height);
+      const auto noise =
+          c1 * glm::simplex(glm::vec2{position_x * frequency1 - 1.3f,
+                                      position_z * frequency1}) +
+          c2 * glm::simplex(glm::vec2{position_x * frequency2 + 1.1f,
+                                      position_z * frequency2 + 2.0f}) +
+          c3 * glm::simplex(glm::vec2{position_x * frequency3 + 5.3f,
+                                      position_z * frequency3 + 0.2f});
+
+      auto normalized_noise =
+          (noise + c1 + c2 + c3) / (((2.0f * (c1 + c2 + c3))) * div);
+
+      normalized_noise = glm::pow(normalized_noise * fudge_factor, e);
+      normalized_noise = glm::round(normalized_noise * terraces) / terraces;
+
+      auto height = static_cast<int>(normalized_noise * Chunk::height);
 
       std::cout << "x: " << position_x << " z: " << position_z
                 << " noise: " << noise << " height: " << height << std::endl;
 
-      for (int y = 0; y <= height; ++y)
+      for (int y = 0; y <= height || y <= water_level; ++y)
       {
         assert(0 <= y && y < blocks_[x][z].size());
         auto &block = blocks_[x][z][y];
@@ -123,9 +131,13 @@ void Chunk::generate(const glm::vec3 &position, const World &world)
         {
           block.set_type(Block::Type::Grass);
         }
-        else
+        else if (y < height)
         {
           block.set_type(Block::Type::Dirt);
+        }
+        else if (y <= water_level)
+        {
+          block.set_type(Block::Type::Water);
         }
       }
     }
