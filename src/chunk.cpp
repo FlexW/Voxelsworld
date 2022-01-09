@@ -355,7 +355,7 @@ bool Chunk::is_valid_block_position(const glm::ivec3 &position) const
           (0 <= y && y < blocks_[x][z].size()));
 }
 
-bool Chunk::remove_block(const World &world, const glm::ivec3 &position)
+bool Chunk::remove_block(World &world, const glm::ivec3 &position)
 {
   std::cout << "Try to remove block: " << position << std::endl;
   if (!is_valid_block_position(position))
@@ -375,10 +375,7 @@ bool Chunk::remove_block(const World &world, const glm::ivec3 &position)
   std::cout << "Remove block" << std::endl;
   block.set_type(Block::Type::Air);
   regenerate_mesh(world);
-
-  // TODO: Check if border block
-  // If border block check if neigbour block is solid
-  // If solid regenerate mesh of neigbour chunk
+  regenerate_chunks_if_border_block(world, position);
 
   return true;
 }
@@ -387,6 +384,44 @@ Block &Chunk::block(const glm::ivec3 &position)
 {
   assert(is_valid_block_position(position));
   return blocks_[position.x][position.z][position.y];
+}
+
+void Chunk::regenerate_chunks_if_border_block(World            &world,
+                                              const glm::ivec3 &position)
+{
+  // TODO: Optimize check if neighbour block is solid
+  if (position.x == 0)
+  {
+    world.regenerate_chunk(
+        glm::ivec3{position_.x - 1, position_.y, position_.z});
+  }
+  else if (position.x == blocks_.size() - 1)
+  {
+    world.regenerate_chunk(
+        glm::ivec3{position_.x + 1, position_.y, position_.z});
+  }
+
+  if (position.z == 0)
+  {
+    world.regenerate_chunk(
+        glm::ivec3{position_.x, position_.y, position_.z - 1});
+  }
+  else if (position.z == blocks_[position.x].size() - 1)
+  {
+    world.regenerate_chunk(
+        glm::ivec3{position_.x, position_.y, position_.z + 1});
+  }
+
+  if (position.y == 0)
+  {
+    world.regenerate_chunk(
+        glm::ivec3{position_.x, position_.y - 1, position_.z});
+  }
+  else if (position.y == blocks_[position.x][position.z].size() - 1)
+  {
+    world.regenerate_chunk(
+        glm::ivec3{position_.x, position_.y + 1, position_.z});
+  }
 }
 
 glm::ivec3
@@ -405,7 +440,7 @@ Chunk::block_position_to_world_position(const glm::ivec3 &block_position) const
   return {x, y, z};
 }
 
-bool Chunk::place_block(const World      &world,
+bool Chunk::place_block(World            &world,
                         const glm::ivec3 &position,
                         Block::Type       block_type)
 {
@@ -420,10 +455,7 @@ bool Chunk::place_block(const World      &world,
   block.set_type(block_type);
 
   regenerate_mesh(world);
-
-  // TODO: Check if border block
-  // If border block check if neigbour block is solid
-  // If solid regenerate mesh of neigbour chunk
+  regenerate_chunks_if_border_block(world, position);
 
   return true;
 }

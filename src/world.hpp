@@ -26,6 +26,8 @@ public:
   bool remove_block(const glm::vec3 &position);
   bool place_block(const Ray &ray);
 
+  void regenerate_chunk(const glm::ivec3 &chunk_position);
+
 private:
   std::array<std::array<Chunk, grid_size>, grid_size> chunks_;
 

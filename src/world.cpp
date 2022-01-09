@@ -352,3 +352,13 @@ bool World::place_block(const Ray &ray)
 
   return false;
 }
+
+void World::regenerate_chunk(const glm::ivec3 &chunk_position)
+{
+  if (!is_chunk(chunk_position))
+  {
+    return;
+  }
+  auto &c = chunk(chunk_position);
+  c.regenerate_mesh(*this);
+}

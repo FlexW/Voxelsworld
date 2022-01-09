@@ -30,10 +30,9 @@ public:
 
   Block::Type block_type(const glm::ivec3 &position) const;
 
-  bool remove_block(const World &world, const glm::ivec3 &position);
-  bool place_block(const World      &world,
-                   const glm::ivec3 &position,
-                   Block::Type       block_type);
+  bool remove_block(World &world, const glm::ivec3 &position);
+  bool
+  place_block(World &world, const glm::ivec3 &position, Block::Type block_type);
 
 private:
   std::vector<const GlVertexBuffer *> vertex_buffers_;
@@ -62,4 +61,7 @@ private:
 
   glm::ivec3
   block_position_to_world_position(const glm::ivec3 &block_position) const;
+
+  void regenerate_chunks_if_border_block(World            &world,
+                                         const glm::ivec3 &position);
 };
