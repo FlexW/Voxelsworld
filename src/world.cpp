@@ -13,7 +13,7 @@
 
 namespace
 {
-constexpr int t = 8;
+constexpr int t = 16;
 
 glm::ivec3
 player_position_to_world_block_position(const glm::vec3 &player_position)
@@ -141,6 +141,11 @@ void World::set_player_position(const glm::vec3 &position)
          ++z)
     {
       // FIXME: This will fail for border chunks
+      if (!is_chunk(glm::vec3{x, current_chunk_position.y, z}))
+      {
+        continue;
+      }
+
       auto &c = chunk(glm::ivec3{x, 0, z});
       if (!c.is_generated())
       {
@@ -158,31 +163,47 @@ void World::set_player_position(const glm::vec3 &position)
 
     // Regenarate neighbours if needed
     {
-      auto &c = chunk(glm::ivec3{pos.x - 1, pos.y, pos.z});
-      if (c.is_generated() && c.is_mesh_generated())
+      const glm::ivec3 neighbour_chunk_pos{pos.x - 1, pos.y, pos.z};
+      if (is_chunk(neighbour_chunk_pos))
       {
-        c.regenerate_mesh(*this);
+        auto &c = chunk(neighbour_chunk_pos);
+        if (c.is_generated() && c.is_mesh_generated())
+        {
+          c.regenerate_mesh(*this);
+        }
       }
     }
     {
-      auto &c = chunk(glm::ivec3{pos.x, pos.y, pos.z - 1});
-      if (c.is_generated() && c.is_mesh_generated())
+      const glm::ivec3 neighbour_chunk_pos{pos.x, pos.y, pos.z - 1};
+      if (is_chunk(neighbour_chunk_pos))
       {
-        c.regenerate_mesh(*this);
+        auto &c = chunk(neighbour_chunk_pos);
+        if (c.is_generated() && c.is_mesh_generated())
+        {
+          c.regenerate_mesh(*this);
+        }
       }
     }
     {
-      auto &c = chunk(glm::ivec3{pos.x + 1, pos.y, pos.z});
-      if (c.is_generated() && c.is_mesh_generated())
+      const glm::ivec3 neighbour_chunk_pos{pos.x + 1, pos.y, pos.z};
+      if (is_chunk(neighbour_chunk_pos))
       {
-        c.regenerate_mesh(*this);
+        auto &c = chunk(neighbour_chunk_pos);
+        if (c.is_generated() && c.is_mesh_generated())
+        {
+          c.regenerate_mesh(*this);
+        }
       }
     }
     {
-      auto &c = chunk(glm::ivec3{pos.x, pos.y, pos.z + 1});
-      if (c.is_generated() && c.is_mesh_generated())
+      const glm::ivec3 neighbour_chunk_pos{pos.x, pos.y, pos.z + 1};
+      if (is_chunk(neighbour_chunk_pos))
       {
-        c.regenerate_mesh(*this);
+        auto &c = chunk(neighbour_chunk_pos);
+        if (c.is_generated() && c.is_mesh_generated())
+        {
+          c.regenerate_mesh(*this);
+        }
       }
     }
   }
@@ -217,8 +238,9 @@ bool World::is_chunk(const glm::ivec3 &position) const
   const auto storage_position = chunk_position_to_storage_position(position);
 
   return ((storage_position.y == 0) &&
-          (0 <= storage_position.x < chunks_.size()) &&
-          (0 <= storage_position.z < chunks_[storage_position.x].size()));
+          (0 <= storage_position.x && storage_position.x < chunks_.size()) &&
+          (0 <= storage_position.z &&
+           storage_position.z < chunks_[storage_position.x].size()));
 }
 
 Chunk &World::chunk(const glm::ivec3 &position)
@@ -241,20 +263,31 @@ void World::draw(GlShader &shader)
   const auto current_chunk_position =
       position_to_chunk_position(player_position_);
 
-  for (int x = current_chunk_position.x - t; x <= current_chunk_position.x + t;
-       ++x)
+  // for (int x = current_chunk_position.x - t; x <= current_chunk_position.x +
+  // t;
+  //      ++x)
+  // {
+  //   for (int z = current_chunk_position.z - t;
+  //        z <= current_chunk_position.z + t;
+  //        ++z)
+  //   {
+  for (int x = 0; x < chunks_.size(); ++x)
   {
-    for (int z = current_chunk_position.z - t;
-         z <= current_chunk_position.z + t;
-         ++z)
+    for (int z = 0; z < chunks_[x].size(); ++z)
     {
       // FIXME: This will fail for border chunks
-      auto &c = chunk(glm::ivec3{x, 0, z});
-      assert(c.is_generated());
+      auto &c = chunks_[x][z];
+      if (!c.is_mesh_generated())
+      {
+        continue;
+      }
+      const auto chunk_position = c.position();
       // Set model matrix
       const auto chunk_model_matrix =
           glm::translate(glm::mat4(1.0f),
-                         glm::vec3(x * Chunk::width, 0, z * Chunk::width));
+                         glm::vec3(chunk_position.x * Chunk::width,
+                                   0,
+                                   chunk_position.z * Chunk::width));
       shader.set_uniform("model_matrix", chunk_model_matrix);
 
       // Material

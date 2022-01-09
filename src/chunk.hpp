@@ -64,4 +64,15 @@ private:
 
   void regenerate_chunks_if_border_block(World            &world,
                                          const glm::ivec3 &position);
+
+  void send_mesh_data_to_gpu(const std::vector<glm::vec3> &positions,
+                             const std::vector<glm::vec3> &normals,
+                             const std::vector<glm::vec2> &tex_coords,
+                             const std::vector<unsigned>  &indices);
+
+  void generate_mesh_data(const World            &world,
+                          std::vector<glm::vec3> &positions,
+                          std::vector<glm::vec3> &normals,
+                          std::vector<glm::vec2> &tex_coords,
+                          std::vector<unsigned>  &indices);
 };

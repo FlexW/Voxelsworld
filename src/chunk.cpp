@@ -69,53 +69,67 @@ void Chunk::generate(const glm::vec3 &position, const World &world)
                          static_cast<int>(position.y),
                          static_cast<int>(position.z));
 
+  std::cout << "Generate chunk: " << position_ << std::endl;
+
   // blocks_[0][0][0].set_type(Block::Type::Grass);
   // blocks_[1][0][0].set_type(Block::Type::Grass);
-
-  for (int x = 0; x < blocks_.size(); ++x)
-  {
-    for (int z = 0; z < blocks_[x].size(); ++z)
-    {
-      for (int y = 0; y < blocks_[x][z].size(); ++y)
-      {
-        auto &block = blocks_[x][z][y];
-        if (y == 0)
-        {
-          block.set_type(Block::Type::Dirt);
-        }
-        if (y == 1 && x % 2 == 0 && z % 2 == 0)
-        {
-          block.set_type(Block::Type::Grass);
-        }
-      }
-    }
-  }
-
-  // NOISE ---------------
-
-  // static constexpr auto frequency = 0.005f;
 
   // for (int x = 0; x < blocks_.size(); ++x)
   // {
   //   for (int z = 0; z < blocks_[x].size(); ++z)
   //   {
-  //     auto position_x = x + position.x + 0.5f;
-  //     auto position_z = z + position.z + 0.5f;
-
-  //     const auto n = glm::simplex(
-  //         glm::vec2(position_x * frequency, position_z * frequency));
-  //     const auto height = (n + 1.0f) * Chunk::height;
-
-  //     std::cout << "x: " << position_x << " z: " << position_z << " y: " << n
-  //               << std::endl;
-
-  //     for (int y = 0; y <= height; ++y)
+  //     for (int y = 0; y < blocks_[x][z].size(); ++y)
   //     {
   //       auto &block = blocks_[x][z][y];
-  //       block.set_type(Block::Type::Grass);
+  //       if (y == 0)
+  //       {
+  //         block.set_type(Block::Type::Dirt);
+  //       }
+  //       if (y == 1 && x % 2 == 0 && z % 2 == 0)
+  //       {
+  //         block.set_type(Block::Type::Grass);
+  //       }
   //     }
   //   }
   // }
+
+  // NOISE ---------------
+
+  static constexpr auto frequency = 0.001f;
+
+  for (int x = 0; x < blocks_.size(); ++x)
+  {
+    for (int z = 0; z < blocks_[x].size(); ++z)
+    {
+      const auto world_position =
+          block_position_to_world_position(glm::ivec3{x, 0, z});
+
+      auto position_x = world_position.x + 0.5f;
+      auto position_z = world_position.z + 0.5f;
+
+      const auto noise = glm::simplex(
+          glm::vec2{position_x * frequency, position_z * frequency});
+      const auto height =
+          static_cast<int>(((noise + 1.0f) / 2.0f) * Chunk::height);
+
+      std::cout << "x: " << position_x << " z: " << position_z
+                << " noise: " << noise << " height: " << height << std::endl;
+
+      for (int y = 0; y <= height; ++y)
+      {
+        assert(0 <= y && y < blocks_[x][z].size());
+        auto &block = blocks_[x][z][y];
+        if (y == height)
+        {
+          block.set_type(Block::Type::Grass);
+        }
+        else
+        {
+          block.set_type(Block::Type::Dirt);
+        }
+      }
+    }
+  }
 
   is_generated_ = true;
 }
@@ -145,13 +159,12 @@ bool Chunk::is_block(const glm::ivec3 &position, const World &world) const
   return world.is_block(world_position);
 }
 
-void Chunk::fill_mesh_data(const World &world)
+void Chunk::generate_mesh_data(const World            &world,
+                               std::vector<glm::vec3> &positions,
+                               std::vector<glm::vec3> &normals,
+                               std::vector<glm::vec2> &tex_coords,
+                               std::vector<unsigned>  &indices)
 {
-  std::vector<glm::vec3> positions;
-  std::vector<glm::vec3> normals;
-  std::vector<glm::vec2> tex_coords;
-  std::vector<unsigned>  indices;
-
   int current_index = 0;
   for (int x = 0; x < blocks_.size(); ++x)
   {
@@ -351,7 +364,24 @@ void Chunk::fill_mesh_data(const World &world)
       }
     }
   }
+}
 
+void Chunk::fill_mesh_data(const World &world)
+{
+
+  std::vector<glm::vec3> positions;
+  std::vector<glm::vec3> normals;
+  std::vector<glm::vec2> tex_coords;
+  std::vector<unsigned>  indices;
+  generate_mesh_data(world, positions, normals, tex_coords, indices);
+  send_mesh_data_to_gpu(positions, normals, tex_coords, indices);
+}
+
+void Chunk::send_mesh_data_to_gpu(const std::vector<glm::vec3> &positions,
+                                  const std::vector<glm::vec3> &normals,
+                                  const std::vector<glm::vec2> &tex_coords,
+                                  const std::vector<unsigned>  &indices)
+{
   {
     GlVertexBufferLayout vec3_layout;
     vec3_layout.push_float(3);

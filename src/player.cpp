@@ -10,7 +10,7 @@ namespace
 constexpr auto gravity = 0.005f;
 }
 
-Player::Player() : camera_(glm::vec3(0.0f, 5.0f, 0.0f))
+Player::Player() : camera_(glm::vec3(0.0f, 150.0f, 0.0f))
 {
   camera_.set_free_fly(free_fly_);
 }
