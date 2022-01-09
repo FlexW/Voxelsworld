@@ -31,6 +31,9 @@ public:
   Block::Type block_type(const glm::ivec3 &position) const;
 
   bool remove_block(const World &world, const glm::ivec3 &position);
+  bool place_block(const World      &world,
+                   const glm::ivec3 &position,
+                   Block::Type       block_type);
 
 private:
   std::vector<const GlVertexBuffer *> vertex_buffers_;

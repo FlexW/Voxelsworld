@@ -7,6 +7,9 @@ class Ray
 public:
   Ray(const glm::vec3 &position, const glm::vec3 &direction);
 
+  glm::vec3 origin() const;
+  glm::vec3 direction() const;
+
   void step(float scale);
 
   glm::vec3 end() const;

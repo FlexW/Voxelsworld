@@ -4,6 +4,7 @@
 #include "gl/gl_shader.hpp"
 #include "gl/gl_texture.hpp"
 #include "math.hpp"
+#include "ray.hpp"
 
 #include <array>
 #include <memory>
@@ -23,6 +24,7 @@ public:
   [[nodiscard]] bool is_block(const glm::ivec3 &world_position) const;
 
   bool remove_block(const glm::vec3 &position);
+  bool place_block(const Ray &ray);
 
 private:
   std::array<std::array<Chunk, grid_size>, grid_size> chunks_;

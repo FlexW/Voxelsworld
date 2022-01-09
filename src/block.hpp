@@ -3,6 +3,9 @@
 class Block
 {
 public:
+  static constexpr int width  = 1;
+  static constexpr int height = 1;
+
   enum class Type
   {
     Grass,

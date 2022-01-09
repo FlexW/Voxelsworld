@@ -31,7 +31,7 @@ void Chunk::generate(const glm::vec3 &position, const World &world)
       for (int y = 0; y < blocks_[x][z].size(); ++y)
       {
         auto &block = blocks_[x][z][y];
-        if (y == 0 || (y == 1 && x % 2 == 0 && z % 2 == 0))
+        if (y == 0 /*|| (y == 1 && x % 2 == 0 && z % 2 == 0)*/)
         {
           block.set_type(Block::Type::Grass);
         }
@@ -397,42 +397,33 @@ Chunk::block_position_to_world_position(const glm::ivec3 &block_position) const
   // // We need to account for out of bounds
   const auto chunk_position      = position_;
   const auto real_block_position = block_position;
-  // if (block_position.x < 0)
-  // {
-  //   chunk_position.x -= 1;
-  //   real_block_position.x = Chunk::width - 1;
-  // }
-  // if (block_position.x >= Chunk::width)
-  // {
-  //   chunk_position.x += 1;
-  //   real_block_position.x = 0;
-  // }
-
-  // if (block_position.y < 0)
-  // {
-  //   chunk_position.y -= 1;
-  //   real_block_position.y = Chunk::height - 1;
-  // }
-  // if (block_position.y >= Chunk::height)
-  // {
-  //   chunk_position.y += 1;
-  //   real_block_position.y = 0;
-  // }
-
-  // if (block_position.z < 0)
-  // {
-  //   chunk_position.z -= 1;
-  //   real_block_position.z = Chunk::width - 1;
-  // }
-  // if (block_position.z >= Chunk::width)
-  // {
-  //   chunk_position.z += 1;
-  //   real_block_position.z = 0;
-  // }
 
   const auto x = real_block_position.x + chunk_position.x * Chunk::width;
   const auto z = real_block_position.z + chunk_position.z * Chunk::width;
   const auto y = real_block_position.y + chunk_position.y * Chunk::height;
 
   return {x, y, z};
+}
+
+bool Chunk::place_block(const World      &world,
+                        const glm::ivec3 &position,
+                        Block::Type       block_type)
+{
+  std::cout << "Try to place block: " << position << std::endl;
+  if (!is_valid_block_position(position))
+  {
+    std::cout << "Not a valid block" << std::endl;
+    return false;
+  }
+
+  auto &block = blocks_[position.x][position.z][position.y];
+  block.set_type(block_type);
+
+  regenerate_mesh(world);
+
+  // TODO: Check if border block
+  // If border block check if neigbour block is solid
+  // If solid regenerate mesh of neigbour chunk
+
+  return true;
 }

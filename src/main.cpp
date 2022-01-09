@@ -354,17 +354,6 @@ int main()
       // std::cout << "Position: " << glm::to_string(camera.position())
       //           << std::endl;
 
-      // Draw coordinate system
-      debug_draw->draw_line(glm::vec3(0.0f),
-                            glm::vec3(10.0f, 0.0f, 0.0f),
-                            glm::vec3(1.0f, 0.0f, 0.0f));
-      debug_draw->draw_line(glm::vec3(0.0f),
-                            glm::vec3(0.0f, 10.0f, 0.0f),
-                            glm::vec3(0.0f, 1.0f, 0.0f));
-      debug_draw->draw_line(glm::vec3(0.0f),
-                            glm::vec3(0.0f, 0.0f, 10.0f),
-                            glm::vec3(0.0f, 0.0f, 1.0f));
-
       const auto projection_matrix =
           glm::perspective(glm::radians(player.zoom()),
                            static_cast<float>(window_width) / window_height,
@@ -394,6 +383,17 @@ int main()
 
         world->draw(shader);
         shader.unbind();
+
+        // Draw coordinate system
+        debug_draw->draw_line(glm::vec3(0.0f),
+                              glm::vec3(10.0f, 0.0f, 0.0f),
+                              glm::vec3(1.0f, 0.0f, 0.0f));
+        debug_draw->draw_line(glm::vec3(0.0f),
+                              glm::vec3(0.0f, 10.0f, 0.0f),
+                              glm::vec3(0.0f, 1.0f, 0.0f));
+        debug_draw->draw_line(glm::vec3(0.0f),
+                              glm::vec3(0.0f, 0.0f, 10.0f),
+                              glm::vec3(0.0f, 0.0f, 1.0f));
 
         // Debug draw
         debug_draw->submit(player.view_matrix(), projection_matrix);

@@ -12,6 +12,7 @@ target_sources(app PRIVATE
   debug_draw.cpp
   player.cpp
   ray.cpp
+  aabb.cpp
   )
 
 target_link_libraries(app PRIVATE

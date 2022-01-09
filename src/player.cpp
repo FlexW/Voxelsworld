@@ -164,6 +164,21 @@ void Player::update(GLFWwindow *window,
       }
     }
   }
+
+  // Block placing
+  if (do_place_block_)
+  {
+    do_place_block_ = false;
+    for (Ray ray(camera_.position(), camera_.front()); ray.length() < 10.0f;
+         ray.step(0.5f))
+    {
+      if (world.place_block(ray))
+      {
+        break;
+      }
+    }
+  }
+
   if (block_pick_debug_.size() > 0)
   {
     debug_draw.draw_line(block_pick_debug_, glm::vec3{1.0f, 1.0f, 0.0f});
@@ -175,6 +190,10 @@ void Player::on_mouse_button(int button, int action, int mods)
   if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
   {
     do_pick_block_ = true;
+  }
+  else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+  {
+    do_place_block_ = true;
   }
 }
 

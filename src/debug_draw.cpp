@@ -57,4 +57,7 @@ void DebugDraw::submit(const glm::mat4 &view_matrix,
   gl_shader_->set_uniform("projection_matrix", projection_matrix);
   gl_shader_->draw(vertex_buffers_, GL_LINES);
   gl_shader_->unbind();
+
+  lines_.clear();
+  colors_.clear();
 }

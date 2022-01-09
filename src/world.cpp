@@ -1,4 +1,5 @@
 #include "world.hpp"
+#include "aabb.hpp"
 #include "block.hpp"
 #include "chunk.hpp"
 #include "defer.hpp"
@@ -304,4 +305,50 @@ bool World::remove_block(const glm::vec3 &position)
   std::cout << "Block pos in chunk: " << block_in_chunk_position << std::endl;
 
   return c.remove_block(*this, block_in_chunk_position);
+}
+
+bool World::place_block(const Ray &ray)
+{
+  const auto block_position =
+      player_position_to_world_block_position(ray.end());
+
+  if (!is_chunk_under_position(block_position))
+  {
+    return false;
+  }
+
+  const auto [chunk_position, block_in_chunk_position] =
+      world_position_to_chunk_position(block_position);
+
+  auto &c = chunk(chunk_position);
+  if (c.block_type(block_in_chunk_position) == Block::Type::Air)
+  {
+    return false;
+  }
+
+  std::cout << "Test intersection with block" << block_position << std::endl;
+
+  Aabb aabb{block_position,
+            glm::vec3{block_position.x + Block::width,
+                      block_position.y + Block::height,
+                      block_position.z + Block::width}};
+  const auto intersection = aabb.intersect(ray);
+  if (intersection.has_value())
+  {
+    std::cout << "Place block" << std::endl;
+    std::cout << "Intersect: " << intersection.value() << std::endl;
+    const auto new_block_world_position =
+        player_position_to_world_block_position(intersection.value());
+    std::cout << "New block position: " << new_block_world_position
+              << std::endl;
+
+    const auto [_, new_block_chunk_position] =
+        world_position_to_chunk_position(new_block_world_position);
+
+    c.place_block(*this, new_block_chunk_position, Block::Type::Grass);
+
+    return true;
+  }
+
+  return false;
 }

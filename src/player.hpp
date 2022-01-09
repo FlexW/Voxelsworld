@@ -42,7 +42,8 @@ private:
   float jump_height_     = 0.0f;
   float max_jump_height_ = 2.0f;
 
-  bool                   do_pick_block_ = false;
+  bool                   do_pick_block_  = false;
+  bool                   do_place_block_ = false;
   std::vector<glm::vec3> block_pick_debug_;
 
   void jump();
