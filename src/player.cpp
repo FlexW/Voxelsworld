@@ -7,10 +7,11 @@
 
 namespace
 {
-constexpr auto gravity = 0.005f;
+constexpr auto gravity       = 0.005f;
+constexpr auto player_height = 1.3f;
 }
 
-Player::Player() : camera_(glm::vec3(0.0f, 10.0f, 0.0f))
+Player::Player() : camera_(glm::vec3(0.0f, 30.0f, 0.0f))
 {
   camera_.set_free_fly(free_fly_);
 }
@@ -31,7 +32,7 @@ void Player::update(GLFWwindow *window,
   {
     if (is_jumping_ && !is_falling_)
     {
-      const auto h = gravity * 2.0f * delta_time;
+      const auto h = gravity * 1.0f * delta_time;
       jump_height_ += h;
       position.y += h;
       camera_.set_position(position);
@@ -43,8 +44,8 @@ void Player::update(GLFWwindow *window,
     }
     else
     {
-      const auto is_block =
-          world.is_block(glm::ivec3{position.x, position.y - 1.0f, position.z});
+      const auto is_block = world.is_block(
+          glm::ivec3{position.x, position.y - player_height, position.z});
       if (!is_block)
       {
         position.y -= gravity * delta_time;
@@ -72,7 +73,7 @@ void Player::update(GLFWwindow *window,
   const auto is_move_allowed =
       [this, &position, &world](const glm::vec3 &direction)
   {
-    for (Ray ray(position, camera_.front_movement()); ray.length() < 0.1f;
+    for (Ray ray(position, camera_.front_movement()); ray.length() < 0.45f;
          ray.step(0.01f))
     {
       const auto point = ray.end();

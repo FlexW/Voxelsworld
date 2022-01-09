@@ -35,7 +35,7 @@ private:
   double mouse_offset_y_   = 0.0;
 
   Camera camera_;
-  bool   free_fly_ = true;
+  bool   free_fly_ = false;
 
   bool  is_jumping_ = false;
   bool  is_falling_      = false;

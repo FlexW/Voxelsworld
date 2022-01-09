@@ -35,9 +35,11 @@ bool TextureAtlas::load(const std::filesystem::path &file_path,
   texture_height_ = height;
 
   sub_texture_width_ = static_cast<float>(texture_width_) /
-                       static_cast<float>(texture_width_count);
+                           static_cast<float>(texture_width_count) -
+                       0.001f;
   sub_texture_height_ = static_cast<float>(texture_height_) /
-                        static_cast<float>(texture_height_count);
+                            static_cast<float>(texture_height_count) -
+                        0.001f;
 
   return true;
 }
