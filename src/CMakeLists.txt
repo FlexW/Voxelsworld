@@ -14,6 +14,9 @@ target_sources(app PRIVATE
   ray.cpp
   aabb.cpp
   texture_atlas.cpp
+  config.cpp
+  string.cpp
+  application.cpp
   )
 
 target_link_libraries(app PRIVATE

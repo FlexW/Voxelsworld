@@ -1,5 +1,6 @@
 #include "world.hpp"
 #include "aabb.hpp"
+#include "application.hpp"
 #include "block.hpp"
 #include "chunk.hpp"
 #include "defer.hpp"
@@ -13,8 +14,6 @@
 
 namespace
 {
-constexpr int t = 16;
-
 glm::ivec3
 player_position_to_world_block_position(const glm::vec3 &player_position)
 {
@@ -40,36 +39,37 @@ player_position_to_world_block_position(const glm::vec3 &player_position)
 std::pair<glm::ivec3, glm::ivec3>
 world_position_to_chunk_position(const glm::ivec3 &world_position)
 {
-  glm::ivec3 chunk_position{world_position.x / Chunk::width,
-                            world_position.y / Chunk::height,
-                            world_position.z / Chunk::width};
+  glm::ivec3 chunk_position{world_position.x / Chunk::width(),
+                            world_position.y / Chunk::height(),
+                            world_position.z / Chunk::width()};
 
-  glm::ivec3 block_position{world_position.x - chunk_position.x * Chunk::width,
-                            world_position.y - chunk_position.y * Chunk::height,
-                            world_position.z - chunk_position.z * Chunk::width};
+  glm::ivec3 block_position{
+      world_position.x - chunk_position.x * Chunk::width(),
+      world_position.y - chunk_position.y * Chunk::height(),
+      world_position.z - chunk_position.z * Chunk::width()};
 
   if (block_position.x < 0)
   {
-    block_position.x += Chunk::width;
+    block_position.x += Chunk::width();
   }
   if (block_position.y < 0)
   {
-    block_position.y += Chunk::height;
+    block_position.y += Chunk::height();
   }
   if (block_position.z < 0)
   {
-    block_position.z += Chunk::width;
+    block_position.z += Chunk::width();
   }
 
-  if (world_position.x < 0 && world_position.x % Chunk::width != 0)
+  if (world_position.x < 0 && world_position.x % Chunk::width() != 0)
   {
     chunk_position.x -= 1;
   }
-  if (world_position.y < 0 && world_position.y % Chunk::height != 0)
+  if (world_position.y < 0 && world_position.y % Chunk::height() != 0)
   {
     chunk_position.y -= 1;
   }
-  if (world_position.z < 0 && world_position.z % Chunk::width != 0)
+  if (world_position.z < 0 && world_position.z % Chunk::width() != 0)
   {
     chunk_position.z -= 1;
   }
@@ -112,16 +112,30 @@ load_texture(const std::filesystem::path &file_path)
 
 } // namespace
 
+World::World()
+{
+  const auto app    = Application::instance();
+  const auto config = app->config();
+  grid_size_        = config.config_value_int("World", "grid_size", grid_size_);
+  chunks_around_player_ = config.config_value_int("World",
+                                                  "chunks_around_player",
+                                                  chunks_around_player_);
+}
+
 void World::init()
 {
+  chunks_.resize(grid_size_);
+  for (std::size_t i = 0; i < chunks_.size(); ++i)
+  {
+    chunks_[i].resize(grid_size_);
+  }
+
   const auto result = world_texure_atlas_.load("data/world_texture.png", 4, 1);
   if (!result)
   {
     std::cerr << "Could not load world texture" << std::endl;
     assert(0);
   }
-  // texture_ = load_texture("data/test_texture.jpg");
-  // texture_ = load_texture("data/awesomeface.png");
 }
 
 void World::set_player_position(const glm::vec3 &position)
@@ -133,11 +147,12 @@ void World::set_player_position(const glm::vec3 &position)
 
   std::vector<glm::ivec3> need_mesh_generation;
 
-  for (int x = current_chunk_position.x - t; x <= current_chunk_position.x + t;
+  for (int x = current_chunk_position.x - chunks_around_player_;
+       x <= current_chunk_position.x + chunks_around_player_;
        ++x)
   {
-    for (int z = current_chunk_position.z - t;
-         z <= current_chunk_position.z + t;
+    for (int z = current_chunk_position.z - chunks_around_player_;
+         z <= current_chunk_position.z + chunks_around_player_;
          ++z)
     {
       // FIXME: This will fail for border chunks
@@ -225,7 +240,7 @@ const Chunk &World::chunk_under_position(const glm::vec3 &position) const
 glm::ivec3
 World::chunk_position_to_storage_position(const glm::ivec3 &position) const
 {
-  static constexpr int half_grid_size = grid_size / 2;
+  const auto half_grid_size = grid_size_ / 2;
 
   const auto real_x = position.x + half_grid_size;
   const auto real_z = position.z + half_grid_size;
@@ -262,15 +277,6 @@ void World::draw(GlShader &shader)
 
   const auto current_chunk_position =
       position_to_chunk_position(player_position_);
-
-  // for (int x = current_chunk_position.x - t; x <= current_chunk_position.x +
-  // t;
-  //      ++x)
-  // {
-  //   for (int z = current_chunk_position.z - t;
-  //        z <= current_chunk_position.z + t;
-  //        ++z)
-  //   {
   for (int x = 0; x < chunks_.size(); ++x)
   {
     for (int z = 0; z < chunks_[x].size(); ++z)
@@ -285,13 +291,12 @@ void World::draw(GlShader &shader)
       // Set model matrix
       const auto chunk_model_matrix =
           glm::translate(glm::mat4(1.0f),
-                         glm::vec3(chunk_position.x * Chunk::width,
+                         glm::vec3(chunk_position.x * Chunk::width(),
                                    0,
-                                   chunk_position.z * Chunk::width));
+                                   chunk_position.z * Chunk::width()));
       shader.set_uniform("model_matrix", chunk_model_matrix);
 
       // Material
-      // shader.set_uniform("in_diffuse_color", glm::vec3(0.34f, 0.49f, 0.27f));
       shader.set_uniform("is_diffuse_tex", true);
       glActiveTexture(GL_TEXTURE0);
       glBindTexture(GL_TEXTURE_2D, world_texure_atlas_.texture_id());

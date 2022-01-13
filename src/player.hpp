@@ -28,6 +28,9 @@ public:
   void on_mouse_button(int button, int action, int mods);
 
 private:
+  float player_height_;
+  float gravity_;
+
   bool   mouse_first_move_ = true;
   double mouse_last_x_     = 0.0;
   double mouse_last_y_     = 0.0;

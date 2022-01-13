@@ -13,8 +13,7 @@
 class World
 {
 public:
-  // Should be an even number
-  static constexpr int grid_size = 64;
+  World();
 
   void init();
 
@@ -33,11 +32,14 @@ public:
                                             int texture_height_index) const;
 
 private:
-  std::array<std::array<Chunk, grid_size>, grid_size> chunks_;
+  int grid_size_            = 64;
+  int chunks_around_player_ = 16;
+
+  std::vector<std::vector<Chunk>> chunks_;
 
   glm::vec3 player_position_ = glm::vec3(0.0f);
 
-  TextureAtlas               world_texure_atlas_;
+  TextureAtlas world_texure_atlas_;
   // std::unique_ptr<GlTexture> texture_{};
 
   bool is_chunk(const glm::ivec3 &position) const;

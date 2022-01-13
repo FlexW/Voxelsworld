@@ -1,4 +1,5 @@
 #include "chunk.hpp"
+#include "application.hpp"
 #include "block.hpp"
 #include "gl/gl_index_buffer.hpp"
 #include "gl/gl_vertex_buffer.hpp"
@@ -61,6 +62,50 @@ TextureAtlas::Coords block_type_to_texture_coords(Block::Type  type,
 
 } // namespace
 
+int Chunk::width()
+{
+  static const auto w =
+      Application::instance()->config().config_value_int("Chunk", "width", 16);
+  return w;
+}
+
+int Chunk::height()
+{
+  static const auto h =
+      Application::instance()->config().config_value_int("Chunk",
+                                                         "height",
+                                                         256);
+  return h;
+}
+
+Chunk::Chunk()
+{
+  auto       app    = Application::instance();
+  const auto config = app->config();
+
+  c1_           = config.config_value_float("Chunk", "c1", 1.0f);
+  c2_ = config.config_value_float("Chunk", "c2", 0.7f);
+  c3_  = config.config_value_float("Chunk", "c3", 0.008f);
+  div_        = config.config_value_float("Chunk", "div", 1.0f);
+  frequency1_ = config.config_value_float("Chunk", "frequency1", 0.0003f);
+  frequency2_ = config.config_value_float("Chunk", "frequency2", 0.008f);
+  frequency3_ = config.config_value_float("Chunk", "frequency3", 0.1f);
+  e_            = config.config_value_float("Chunk", "e", 11.3);
+  fudge_factor_ = config.config_value_float("Chunk", "fudge_factor", 1.1);
+  water_level_  = config.config_value_float("Chunk", "water_level", 5.0);
+  terraces_     = config.config_value_float("Chunk", "terraces", 180.0);
+
+  blocks_.resize(width());
+  for (int x = 0; x < blocks_.size(); ++x)
+  {
+    blocks_[x].resize(width());
+    for (int z = 0; z < blocks_[x].size(); ++z)
+    {
+      blocks_[x][z].resize(height());
+    }
+  }
+}
+
 [[nodiscard]] bool Chunk::is_generated() const { return is_generated_; }
 
 void Chunk::generate(const glm::vec3 &position, const World &world)
@@ -74,26 +119,6 @@ void Chunk::generate(const glm::vec3 &position, const World &world)
                          static_cast<int>(position.y),
                          static_cast<int>(position.z));
 
-  std::cout << "Generate chunk: " << position_ << std::endl;
-
-  static constexpr auto c1 = 1.0f;
-  static constexpr auto c2 = 0.7f;
-  static constexpr auto c3 = 0.008f;
-
-  static constexpr auto div = 1.0f;
-  assert(0.0f <= div && div <= 1.0f);
-
-  static constexpr auto frequency1 = 0.0003f;
-  static constexpr auto frequency2 = 0.008f;
-  static constexpr auto frequency3 = 0.1f;
-
-  static constexpr auto e            = 11.3f;
-  static constexpr auto fudge_factor = 1.1f;
-
-  static constexpr auto water_level = 5.0f;
-
-  static constexpr auto terraces = 180.0f;
-
   for (int x = 0; x < blocks_.size(); ++x)
   {
     for (int z = 0; z < blocks_[x].size(); ++z)
@@ -105,25 +130,22 @@ void Chunk::generate(const glm::vec3 &position, const World &world)
       auto position_z = world_position.z + 0.5f;
 
       const auto noise =
-          c1 * glm::simplex(glm::vec2{position_x * frequency1 - 1.3f,
-                                      position_z * frequency1}) +
-          c2 * glm::simplex(glm::vec2{position_x * frequency2 + 1.1f,
-                                      position_z * frequency2 + 2.0f}) +
-          c3 * glm::simplex(glm::vec2{position_x * frequency3 + 5.3f,
-                                      position_z * frequency3 + 0.2f});
+          c1_ * glm::simplex(glm::vec2{position_x * frequency1_ - 1.3f,
+                                       position_z * frequency1_}) +
+          c2_ * glm::simplex(glm::vec2{position_x * frequency2_ + 1.1f,
+                                       position_z * frequency2_ + 2.0f}) +
+          c3_ * glm::simplex(glm::vec2{position_x * frequency3_ + 5.3f,
+                                       position_z * frequency3_ + 0.2f});
 
       auto normalized_noise =
-          (noise + c1 + c2 + c3) / (((2.0f * (c1 + c2 + c3))) * div);
+          (noise + c1_ + c2_ + c3_) / (((2.0f * (c1_ + c2_ + c3_))) * div_);
 
-      normalized_noise = glm::pow(normalized_noise * fudge_factor, e);
-      normalized_noise = glm::round(normalized_noise * terraces) / terraces;
+      normalized_noise = glm::pow(normalized_noise * fudge_factor_, e_);
+      normalized_noise = glm::round(normalized_noise * terraces_) / terraces_;
 
-      auto height = static_cast<int>(normalized_noise * Chunk::height);
+      auto height = static_cast<int>(normalized_noise * Chunk::height());
 
-      std::cout << "x: " << position_x << " z: " << position_z
-                << " noise: " << noise << " height: " << height << std::endl;
-
-      for (int y = 0; y <= height || y <= water_level; ++y)
+      for (int y = 0; y <= height || y <= water_level_; ++y)
       {
         assert(0 <= y && y < blocks_[x][z].size());
         auto &block = blocks_[x][z][y];
@@ -135,7 +157,7 @@ void Chunk::generate(const glm::vec3 &position, const World &world)
         {
           block.set_type(Block::Type::Dirt);
         }
-        else if (y <= water_level)
+        else if (y <= water_level_)
         {
           block.set_type(Block::Type::Water);
         }
@@ -551,9 +573,9 @@ Chunk::block_position_to_world_position(const glm::ivec3 &block_position) const
   const auto chunk_position      = position_;
   const auto real_block_position = block_position;
 
-  const auto x = real_block_position.x + chunk_position.x * Chunk::width;
-  const auto z = real_block_position.z + chunk_position.z * Chunk::width;
-  const auto y = real_block_position.y + chunk_position.y * Chunk::height;
+  const auto x = real_block_position.x + chunk_position.x * Chunk::width();
+  const auto z = real_block_position.z + chunk_position.z * Chunk::width();
+  const auto y = real_block_position.y + chunk_position.y * Chunk::height();
 
   return {x, y, z};
 }

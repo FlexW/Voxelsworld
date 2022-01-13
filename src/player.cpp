@@ -1,18 +1,30 @@
 #include "player.hpp"
-#include "GLFW/glfw3.h"
+#include "application.hpp"
 #include "camera.hpp"
 #include "debug_draw.hpp"
 #include "ray.hpp"
-#include <linux/limits.h>
 
 namespace
 {
-constexpr auto gravity       = 0.005f;
-constexpr auto player_height = 1.3f;
 }
 
 Player::Player() : camera_(glm::vec3(0.0f, 30.0f, 0.0f))
 {
+  auto       app    = Application::instance();
+  const auto config = app->config();
+
+  free_fly_      = config.config_value_bool("Player", "free_fly", free_fly_);
+  player_height_ = config.config_value_float("Player", "height", 1.3f);
+  gravity_       = config.config_value_float("Player", "gravity", 0.008f);
+  const auto start_position_x =
+      config.config_value_float("Player", "start_positon_x", 0.0f);
+  const auto start_position_y =
+      config.config_value_float("Player", "start_positon_y", 30.0f);
+  const auto start_position_z =
+      config.config_value_float("Player", "start_positon_z", 0.0f);
+
+  camera_.set_position(
+      glm::vec3{start_position_x, start_position_y, start_position_z});
   camera_.set_free_fly(free_fly_);
 }
 
@@ -32,7 +44,7 @@ void Player::update(GLFWwindow *window,
   {
     if (is_jumping_ && !is_falling_)
     {
-      const auto h = gravity * 1.0f * delta_time;
+      const auto h = gravity_ * 1.0f * delta_time;
       jump_height_ += h;
       position.y += h;
       camera_.set_position(position);
@@ -45,10 +57,10 @@ void Player::update(GLFWwindow *window,
     else
     {
       const auto is_block = world.is_block(
-          glm::ivec3{position.x, position.y - player_height, position.z});
+          glm::ivec3{position.x, position.y - player_height_, position.z});
       if (!is_block)
       {
-        position.y -= gravity * delta_time;
+        position.y -= gravity_ * delta_time;
         camera_.set_position(position);
         if (is_falling_)
         {

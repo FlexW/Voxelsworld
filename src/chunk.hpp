@@ -13,8 +13,10 @@ class World;
 class Chunk
 {
 public:
-  static constexpr int height = 256;
-  static constexpr int width  = 16;
+  static int width();
+  static int height();
+
+  Chunk();
 
   [[nodiscard]] bool is_generated() const;
   void               generate(const glm::vec3 &position, const World &world);
@@ -36,9 +38,21 @@ public:
 
 private:
   std::vector<const GlVertexBuffer *> vertex_buffers_;
-  std::array<std::array<std::array<Block, height>, width>, width> blocks_;
+  std::vector<std::vector<std::vector<Block>>> blocks_;
 
   glm::ivec3 position_{};
+
+  float c1_;
+  float c2_;
+  float c3_;
+  float div_;
+  float frequency1_;
+  float frequency2_;
+  float frequency3_;
+  float e_;
+  float fudge_factor_;
+  float water_level_;
+  float terraces_;
 
   bool is_generated_      = false;
   bool is_mesh_generated_ = false;
