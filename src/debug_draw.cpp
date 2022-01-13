@@ -16,8 +16,6 @@ DebugDraw::DebugDraw()
 
   gl_shader_ = std::make_unique<GlShader>();
   gl_shader_->init("shaders/line.vert", "shaders/line.frag");
-
-  glLineWidth(line_width);
 }
 
 void DebugDraw::draw_line(const glm::vec3 &from,

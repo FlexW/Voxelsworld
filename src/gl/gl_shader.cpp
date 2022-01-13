@@ -134,8 +134,8 @@ void GlShader::init(const std::filesystem::path &vertex_shader_file_path,
                       &array_size,
                       &type,
                       attrib_name_data.data());
-    std::string attrib_name(attrib_name_data.data(), actual_length - 1);
-    std::cout << "Attribute " << i << " " << attrib_name << "type: " << type
+    std::string attrib_name(attrib_name_data.data(), actual_length);
+    std::cout << "Attribute " << i << " " << attrib_name << " type: " << type
               << " size: " << array_size << std::endl;
     glEnableVertexAttribArray(i);
     switch (type)

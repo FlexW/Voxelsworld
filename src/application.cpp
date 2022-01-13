@@ -106,7 +106,7 @@ void APIENTRY gl_debug_callback(GLenum source,
     sev_str = "UNK";
   }
 
-  std::cerr << "OpenGL" << source_str << ":" << type_str << "[" << sev_str
+  std::cerr << "OpenGL " << source_str << ":" << type_str << "[" << sev_str
             << "]"
             << "(" << id << "): " << msg << std::endl;
 }
@@ -386,8 +386,6 @@ void Application::main_loop()
       world_shader_->set_uniform("projection_matrix", projection_matrix);
 
       // Lights
-      world_shader_->set_uniform("point_light_count", 0);
-      world_shader_->set_uniform("spot_light_count", 0);
       world_shader_->set_uniform("directional_light_enabled", true);
       world_shader_->set_uniform("directional_light.direction",
                                  glm::normalize(glm::vec3(-1.0f, -1.0f, 0.0f)));
