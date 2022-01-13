@@ -63,9 +63,11 @@ private:
 
   std::unique_ptr<GlIndexBuffer> index_buffer_{};
 
-  [[nodiscard]] bool is_block(const glm::ivec3 &position) const;
   [[nodiscard]] bool is_block(const glm::ivec3 &position,
-                              const World      &world) const;
+                              Block::Type       type) const;
+  [[nodiscard]] bool is_block(const glm::ivec3 &position,
+                              const World      &world,
+                              Block::Type       type) const;
 
   void fill_mesh_data(const World &world);
 

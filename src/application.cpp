@@ -163,6 +163,9 @@ void gl_dump_info()
   glGetIntegerv(GL_SAMPLES, &samples);
   glGetIntegerv(GL_SAMPLE_BUFFERS, &sampleBuffers);
 
+  GLint extensions_count = 0;
+  glGetIntegerv(GL_NUM_EXTENSIONS, &extensions_count);
+
   std::printf(
       "-------------------------------------------------------------\n");
   std::printf("GL Vendor    : %s\n", vendor);
@@ -172,6 +175,12 @@ void gl_dump_info()
   std::printf("GLSL Version : %s\n", glsl_version);
   std::printf("MSAA samples : %d\n", samples);
   std::printf("MSAA buffers : %d\n", sampleBuffers);
+  std::printf("GL Extensions:\n");
+  for (GLint i = 0; i < extensions_count; ++i)
+  {
+    const auto extension = glGetStringi(GL_EXTENSIONS, i);
+    std::printf("\t%s\n", extension);
+  }
   std::printf(
       "-------------------------------------------------------------\n");
 }

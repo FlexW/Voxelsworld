@@ -1,5 +1,6 @@
 #pragma once
 
+#include "block.hpp"
 #include "chunk.hpp"
 #include "gl/gl_shader.hpp"
 #include "gl/gl_texture.hpp"
@@ -22,6 +23,8 @@ public:
   void draw(GlShader &shader);
 
   [[nodiscard]] bool is_block(const glm::ivec3 &world_position) const;
+  [[nodiscard]] bool is_block(const glm::ivec3 &world_position,
+                              Block::Type       type) const;
 
   bool remove_block(const glm::vec3 &position);
   bool place_block(const Ray &ray);

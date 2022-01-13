@@ -332,6 +332,28 @@ bool World::is_block(const glm::ivec3 &world_position) const
   return block_type != Block::Type::Air;
 }
 
+[[nodiscard]] bool World::is_block(const glm::ivec3 &world_position,
+                                   Block::Type       type) const
+{
+  const auto [chunk_position, block_position] =
+      world_position_to_chunk_position(world_position);
+
+  if (!is_chunk(chunk_position))
+  {
+    return false;
+  }
+
+  auto      &c          = chunk(chunk_position);
+  const auto block_type = c.block_type(block_position);
+
+  if (type == Block::Type::Water)
+  {
+    return block_type != Block::Type::Air;
+  }
+
+  return block_type != Block::Type::Air && block_type != Block::Type::Water;
+}
+
 bool World::remove_block(const glm::vec3 &position)
 {
   const auto block_position = player_position_to_world_block_position(position);
