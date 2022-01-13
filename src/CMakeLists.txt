@@ -17,6 +17,7 @@ target_sources(app PRIVATE
   config.cpp
   string.cpp
   application.cpp
+  time.cpp
   )
 
 target_link_libraries(app PRIVATE

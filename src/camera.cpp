@@ -121,3 +121,5 @@ glm::vec3 Camera::front_movement() const { return front_movement_; }
 glm::vec3 Camera::right() const { return right_; }
 
 glm::vec3 Camera::front() const { return front_; }
+
+void Camera::set_movement_speed(float value) { movement_speed_ = value; }

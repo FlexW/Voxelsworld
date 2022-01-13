@@ -15,7 +15,9 @@ Player::Player() : camera_(glm::vec3(0.0f, 30.0f, 0.0f))
 
   free_fly_      = config.config_value_bool("Player", "free_fly", free_fly_);
   player_height_ = config.config_value_float("Player", "height", 1.3f);
-  gravity_       = config.config_value_float("Player", "gravity", 0.008f);
+  gravity_          = config.config_value_float("Player", "gravity", 0.008f);
+  const auto speed  = config.config_value_float("Player", "speed", 8.0f);
+
   const auto start_position_x =
       config.config_value_float("Player", "start_positon_x", 0.0f);
   const auto start_position_y =
@@ -26,6 +28,7 @@ Player::Player() : camera_(glm::vec3(0.0f, 30.0f, 0.0f))
   camera_.set_position(
       glm::vec3{start_position_x, start_position_y, start_position_z});
   camera_.set_free_fly(free_fly_);
+  camera_.set_movement_speed(speed);
 }
 
 glm::mat4 Player::view_matrix() const { return camera_.view_matrix(); }

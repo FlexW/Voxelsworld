@@ -45,6 +45,8 @@ public:
   glm::vec3 front_movement() const;
   glm::vec3 front() const;
 
+  void set_movement_speed(float value);
+
 private:
   glm::vec3 position_;
   glm::vec3 front_;

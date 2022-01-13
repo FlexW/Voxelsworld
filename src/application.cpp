@@ -2,6 +2,7 @@
 #include "application.hpp"
 #include "gl/gl_shader.hpp"
 #include "player.hpp"
+#include "time.hpp"
 
 #include <cstdlib>
 #include <iostream>
@@ -337,21 +338,19 @@ void Application::init()
 
 void Application::main_loop()
 {
-  auto last_time    = std::chrono::high_resolution_clock::now();
-  auto current_time = std::chrono::high_resolution_clock::now();
+  auto  last_time  = current_time_millis();
+  float delta_time = 0.0f;
 
   while (glfwWindowShouldClose(window_) == GLFW_FALSE)
   {
+    // Calculate delta time
+    delta_time = (current_time_millis() - last_time) / 1000.0f;
+    last_time  = current_time_millis();
+
     glfwPollEvents();
 
-    current_time = std::chrono::high_resolution_clock::now();
-    const auto elapsed_time_ms =
-        std::chrono::duration<double, std::milli>(current_time - last_time)
-            .count() /
-        1000.0;
-
     // Process movement
-    player_->update(window_, *world_, *debug_draw_, elapsed_time_ms);
+    player_->update(window_, *world_, *debug_draw_, delta_time);
 
     if (glfwGetKey(window_, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
