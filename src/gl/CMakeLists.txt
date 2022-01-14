@@ -9,4 +9,5 @@ target_sources(gl PRIVATE
   gl_index_buffer.cpp
   gl_vertex_buffer.cpp
   gl_texture.cpp
+  gl_texture_array.cpp
   )

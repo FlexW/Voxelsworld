@@ -140,6 +140,9 @@ void GlShader::init(const std::filesystem::path &vertex_shader_file_path,
     glEnableVertexAttribArray(i);
     switch (type)
     {
+    case GL_FLOAT:
+      glVertexAttribFormat(i, 1, GL_FLOAT, GL_FALSE, 0);
+      break;
     case GL_FLOAT_VEC2:
       glVertexAttribFormat(i, 2, GL_FLOAT, GL_FALSE, 0);
       break;
@@ -151,6 +154,9 @@ void GlShader::init(const std::filesystem::path &vertex_shader_file_path,
       break;
     case GL_INT_VEC4:
       glVertexAttribIFormat(i, 4, GL_INT, 0);
+      break;
+    case GL_INT:
+      glVertexAttribIFormat(i, 1, GL_INT, 0);
       break;
     default:
       assert(0 && "Can not handle Glsl type");

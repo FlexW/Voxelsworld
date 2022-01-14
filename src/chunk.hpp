@@ -60,6 +60,7 @@ private:
   std::unique_ptr<GlVertexBuffer> vertex_buffer_positions_{};
   std::unique_ptr<GlVertexBuffer> vertex_buffer_normals_{};
   std::unique_ptr<GlVertexBuffer> vertex_buffer_tex_coords_{};
+  std::unique_ptr<GlVertexBuffer> vertex_buffer_tex_indices_{};
 
   std::unique_ptr<GlIndexBuffer> index_buffer_{};
 
@@ -84,11 +85,13 @@ private:
   void send_mesh_data_to_gpu(const std::vector<glm::vec3> &positions,
                              const std::vector<glm::vec3> &normals,
                              const std::vector<glm::vec2> &tex_coords,
+                             const std::vector<int>       &tex_indices,
                              const std::vector<unsigned>  &indices);
 
   void generate_mesh_data(const World            &world,
                           std::vector<glm::vec3> &positions,
                           std::vector<glm::vec3> &normals,
                           std::vector<glm::vec2> &tex_coords,
+                          std::vector<int>       &tex_indices,
                           std::vector<unsigned>  &indices);
 };

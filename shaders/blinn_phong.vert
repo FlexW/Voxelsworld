@@ -3,12 +3,14 @@
 layout (location = 0) in vec3 in_position;
 layout (location = 1) in vec3 in_normal;
 layout (location = 2) in vec2 in_tex_coord;
+layout (location = 3) in int in_tex_index;
 
 out VS_OUT
 {
   vec3 position;
   vec3 normal;
   vec2 tex_coord;
+  flat int tex_index;
 } vs_out;
 
 uniform mat4 projection_matrix;
@@ -29,6 +31,8 @@ void main()
   vs_out.position = P.xyz;
   vs_out.normal = N;
   vs_out.tex_coord = in_tex_coord;
+
+  vs_out.tex_index = in_tex_index;
 
   gl_Position = projection_matrix * P;
 }

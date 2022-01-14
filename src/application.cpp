@@ -281,7 +281,8 @@ void Application::init()
     std::cerr << "GLAD could not load OpenGL" << std::endl;
   }
 
-  glfwWindowHint(GLFW_SAMPLES, 8);
+  const auto samples = config_.config_value_int("OpenGL", "samples", 8);
+  glfwWindowHint(GLFW_SAMPLES, samples);
 
   if (opengl_debug_)
   {
@@ -386,7 +387,6 @@ void Application::main_loop()
       world_shader_->set_uniform("projection_matrix", projection_matrix);
 
       // Lights
-      world_shader_->set_uniform("directional_light_enabled", true);
       world_shader_->set_uniform("directional_light.direction",
                                  glm::normalize(glm::vec3(-1.0f, -1.0f, 0.0f)));
       world_shader_->set_uniform("directional_light.ambient_color",

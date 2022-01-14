@@ -5,6 +5,7 @@ in VS_OUT
   vec3 position;
   vec3 normal;
   vec2 tex_coord;
+  flat int tex_index;
 }
 fs_in;
 
@@ -19,13 +20,10 @@ struct DirectionalLight
   vec3 specular_color;
 };
 
-uniform sampler2D in_diffuse_tex;
-uniform vec3      in_diffuse_color = vec3(0.6);
-uniform bool      is_diffuse_tex   = false;
+uniform sampler2DArray in_diffuse_tex;
 
 uniform float specular_power = 200.0f;
 
-uniform bool             directional_light_enabled;
 uniform DirectionalLight directional_light;
 
 vec3 blinn_phong_directional_light(vec3 ambient_color,
@@ -53,16 +51,7 @@ vec3 blinn_phong_directional_light(vec3 ambient_color,
 
 vec3 calc_diffuse_color()
 {
-  if (is_diffuse_tex)
-  {
-    vec4 diffuse_texture = texture(in_diffuse_tex, fs_in.tex_coord).rgba;
-    if (diffuse_texture.a <= 0.01f)
-    {
-      discard;
-    }
-    return diffuse_texture.rgb;
-  }
-  return in_diffuse_color;
+    return texture(in_diffuse_tex, vec3(fs_in.tex_coord, float(fs_in.tex_index))).xyz;
 }
 
 void main()
@@ -72,11 +61,8 @@ void main()
   vec3 specular_color = diffuse_color;
 
   vec3 color = vec3(0.0f);
-  if (directional_light_enabled)
-  {
-    color += blinn_phong_directional_light(ambient_color,
-                                           diffuse_color,
-                                           specular_color);
-  }
+  color += blinn_phong_directional_light(ambient_color,
+                                         diffuse_color,
+                                         specular_color);
   out_color = vec4(color, 1.0);
 }

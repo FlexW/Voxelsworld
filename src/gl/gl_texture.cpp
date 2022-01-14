@@ -2,7 +2,8 @@
 
 #include <cassert>
 
-GlTexture::GlTexture() {
+GlTexture::GlTexture()
+{
   glGenTextures(1, &texture_id_);
   glBindTexture(GL_TEXTURE_2D, texture_id_);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -24,7 +25,7 @@ void GlTexture::set_data(unsigned char *data,
                          int            channels_count)
 {
   GLenum format;
-  GLint internal_format;
+  GLint  internal_format;
   if (channels_count == 1)
   {
     format          = GL_RED;

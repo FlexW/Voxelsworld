@@ -5,7 +5,10 @@
 #include "chunk.hpp"
 #include "defer.hpp"
 #include "gl/gl_texture.hpp"
+#include "gl/gl_texture_array.hpp"
+#include "image.hpp"
 
+#include <cstdint>
 #include <stb_image.h>
 
 #include <cassert>
@@ -86,30 +89,6 @@ glm::ivec3 position_to_chunk_position(const glm::vec3 &position)
   return chunk_position;
 }
 
-[[nodiscard]] std::unique_ptr<GlTexture>
-load_texture(const std::filesystem::path &file_path)
-{
-  int width = 0, height = 0, channels_count = 0;
-  stbi_set_flip_vertically_on_load(true);
-  auto texture_data = stbi_load(file_path.string().c_str(),
-                                &width,
-                                &height,
-                                &channels_count,
-                                0);
-  if (!texture_data)
-  {
-    std::cerr << "Error: Could not load texture " << file_path.string()
-              << std::endl;
-    return {};
-  }
-  defer(stbi_image_free(texture_data));
-
-  auto texture = std::make_unique<GlTexture>();
-  texture->set_data(texture_data, width, height, channels_count);
-
-  return texture;
-}
-
 } // namespace
 
 World::World()
@@ -130,12 +109,78 @@ void World::init()
     chunks_[i].resize(grid_size_);
   }
 
-  const auto result = world_texure_atlas_.load("data/world_texture.png", 4, 1);
-  if (!result)
+  const Image grass_top_image{"data/grass_top.png"};
+  assert(grass_top_image.channels_count() == 4);
+
+  const Image grass_side_image{"data/grass_side.png"};
+  assert(grass_side_image.channels_count() == 4);
+
+  const Image dirt_image{"data/dirt.png"};
+  assert(dirt_image.channels_count() == 4);
+
+  const Image water_image{"data/water.png"};
+  assert(water_image.channels_count() == 4);
+
+  block_textures_ = std::make_unique<GlTextureArray>();
+  block_textures_->set_data({
+      // Order must match block_texture_index()
+      {
+          grass_top_image.data(),
+          grass_top_image.width(),
+          grass_top_image.height(),
+      },
+      {
+          grass_side_image.data(),
+          grass_side_image.width(),
+          grass_side_image.height(),
+      },
+      {
+          dirt_image.data(),
+          dirt_image.width(),
+          dirt_image.height(),
+      },
+      {
+          water_image.data(),
+          water_image.width(),
+          water_image.height(),
+      },
+  });
+}
+
+int World::block_texture_index(Block::Type block_type,
+                               Block::Side block_side) const
+{
+  switch (block_type)
   {
-    std::cerr << "Could not load world texture" << std::endl;
-    assert(0);
+  case Block::Type::Grass:
+  {
+    switch (block_side)
+    {
+    case Block::Side::Top:
+      return 0;
+    case Block::Side::Bottom:
+      return 2;
+    case Block::Side::Front:
+    case Block::Side::Back:
+    case Block::Side::Left:
+    case Block::Side::Right:
+      return 1;
+    }
   }
+  case Block::Type::Dirt:
+  {
+    return 2;
+  }
+  case Block::Type::Water:
+  {
+    return 3;
+  }
+  case Block::Type::Air:
+    assert(0);
+    return {};
+  }
+  assert(0);
+  return {};
 }
 
 void World::set_player_position(const glm::vec3 &position)
@@ -297,12 +342,10 @@ void World::draw(GlShader &shader)
       shader.set_uniform("model_matrix", chunk_model_matrix);
 
       // Material
-      shader.set_uniform("is_diffuse_tex", true);
       glActiveTexture(GL_TEXTURE0);
-      glBindTexture(GL_TEXTURE_2D, world_texure_atlas_.texture_id());
-      shader.set_uniform("in_diffuse_tex",
-                         static_cast<int>(world_texure_atlas_.texture_id()));
-      glBindTexture(GL_TEXTURE_2D, 0);
+      glBindTexture(GL_TEXTURE_2D_ARRAY, block_textures_->id());
+      // shader.set_uniform("in_diffuse_tex",
+      //                    static_cast<int>(block_textures_->id()));
       c.draw(shader);
     }
   }
@@ -429,10 +472,4 @@ void World::regenerate_chunk(const glm::ivec3 &chunk_position)
   }
   auto &c = chunk(chunk_position);
   c.regenerate_mesh(*this);
-}
-
-TextureAtlas::Coords World::world_texture_coords(int texture_width_index,
-                                                 int texture_height_index) const
-{
-  return world_texure_atlas_.get(texture_width_index, texture_height_index);
 }

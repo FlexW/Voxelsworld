@@ -4,9 +4,9 @@
 #include "chunk.hpp"
 #include "gl/gl_shader.hpp"
 #include "gl/gl_texture.hpp"
+#include "gl/gl_texture_array.hpp"
 #include "math.hpp"
 #include "ray.hpp"
-#include "texture_atlas.hpp"
 
 #include <array>
 #include <memory>
@@ -31,8 +31,7 @@ public:
 
   void regenerate_chunk(const glm::ivec3 &chunk_position);
 
-  TextureAtlas::Coords world_texture_coords(int texture_width_index,
-                                            int texture_height_index) const;
+  int block_texture_index(Block::Type block_type, Block::Side block_side) const;
 
 private:
   int grid_size_            = 64;
@@ -42,8 +41,7 @@ private:
 
   glm::vec3 player_position_ = glm::vec3(0.0f);
 
-  TextureAtlas world_texure_atlas_;
-  // std::unique_ptr<GlTexture> texture_{};
+  std::unique_ptr<GlTextureArray> block_textures_;
 
   bool is_chunk(const glm::ivec3 &position) const;
 

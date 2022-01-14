@@ -18,6 +18,7 @@ target_sources(app PRIVATE
   string.cpp
   application.cpp
   time.cpp
+  image.cpp
   )
 
 target_link_libraries(app PRIVATE
