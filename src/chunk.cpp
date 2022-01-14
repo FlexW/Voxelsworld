@@ -100,7 +100,14 @@ void Chunk::generate(const glm::vec3 &position, const World &world)
         auto &block = blocks_[x][z][y];
         if (y == height)
         {
-          block.set_type(Block::Type::Grass);
+          if (y < water_level_)
+          {
+            block.set_type(Block::Type::Dirt);
+          }
+          else
+          {
+            block.set_type(Block::Type::Grass);
+          }
         }
         else if (y < height)
         {
