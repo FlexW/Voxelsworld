@@ -2,6 +2,7 @@
 
 #include "block.hpp"
 #include "chunk.hpp"
+#include "debug_draw.hpp"
 #include "gl/gl_shader.hpp"
 #include "gl/gl_texture.hpp"
 #include "gl/gl_texture_array.hpp"
@@ -20,7 +21,9 @@ public:
 
   void set_player_position(const glm::vec3 &position);
 
-  void draw(const glm::mat4 &view_matrix, const glm::mat4 &projection_matrix);
+  void draw(const glm::mat4 &view_matrix,
+            const glm::mat4 &projection_matrix,
+            DebugDraw       &debug_draw);
 
   [[nodiscard]] bool is_block(const glm::ivec3 &world_position) const;
   [[nodiscard]] bool is_block(const glm::ivec3 &world_position,
@@ -36,6 +39,8 @@ public:
 private:
   int grid_size_            = 64;
   int chunks_around_player_ = 16;
+
+  bool debug_sun_ = false;
 
   std::vector<std::vector<Chunk>> chunks_;
 

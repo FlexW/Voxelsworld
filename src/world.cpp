@@ -3,6 +3,7 @@
 #include "application.hpp"
 #include "block.hpp"
 #include "chunk.hpp"
+#include "debug_draw.hpp"
 #include "defer.hpp"
 #include "gl/gl_texture.hpp"
 #include "gl/gl_texture_array.hpp"
@@ -99,6 +100,7 @@ World::World()
   chunks_around_player_ = config.config_value_int("World",
                                                   "chunks_around_player",
                                                   chunks_around_player_);
+  debug_sun_ = config.config_value_bool("World", "debug_sun", debug_sun_);
 }
 
 void World::init()
@@ -367,7 +369,8 @@ const Chunk &World::chunk(const glm::ivec3 &position) const
 }
 
 void World::draw(const glm::mat4 &view_matrix,
-                 const glm::mat4 &projection_matrix)
+                 const glm::mat4 &projection_matrix,
+                 DebugDraw       &debug_draw)
 {
   world_shader_->bind();
   world_shader_->set_uniform("model_matrix", glm::mat4(1.0f));
@@ -375,14 +378,25 @@ void World::draw(const glm::mat4 &view_matrix,
   world_shader_->set_uniform("projection_matrix", projection_matrix);
 
   // Lights
-  world_shader_->set_uniform("directional_light.direction",
-                             glm::normalize(glm::vec3(-1.0f, -1.0f, 0.0f)));
+  const auto      sun_direction = glm::normalize(glm::vec3{-7.0f, -8.8, 0.0f});
+  const glm::vec3 sun_ambient_color{0.6f};
+  const glm::vec3 sun_diffuse_color{1.0f};
+  const glm::vec3 sun_specular_color{0.8f};
+  if (debug_sun_)
+  {
+    debug_draw.draw_line(glm::vec3{0.0f, 50.0f, 0.0f},
+                         glm::vec3{0.0f, 50.0f, 0.0f} + sun_direction * 800.0f,
+                         glm::vec3{1.0f, 1.0f, 0.0f});
+  }
+  world_shader_->set_uniform(
+      "directional_light.direction",
+      glm::vec3{view_matrix * glm::vec4{sun_direction, 0.0f}});
   world_shader_->set_uniform("directional_light.ambient_color",
-                             glm::vec3(0.6f));
+                             sun_ambient_color);
   world_shader_->set_uniform("directional_light.diffuse_color",
-                             glm::vec3(0.9f));
+                             sun_diffuse_color);
   world_shader_->set_uniform("directional_light.specular_color",
-                             glm::vec3(1.0f));
+                             sun_specular_color);
 
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D_ARRAY, block_textures_->id());
@@ -422,14 +436,15 @@ void World::draw(const glm::mat4 &view_matrix,
   water_shader_->set_uniform("projection_matrix", projection_matrix);
 
   // Lights
-  water_shader_->set_uniform("directional_light.direction",
-                             glm::normalize(glm::vec3(-1.0f, -1.0f, 0.0f)));
+  water_shader_->set_uniform(
+      "directional_light.direction",
+      glm::vec3{view_matrix * glm::vec4{sun_direction, 0.0f}});
   water_shader_->set_uniform("directional_light.ambient_color",
-                             glm::vec3(0.6f));
+                             sun_ambient_color);
   water_shader_->set_uniform("directional_light.diffuse_color",
-                             glm::vec3(0.9f));
+                             sun_diffuse_color);
   water_shader_->set_uniform("directional_light.specular_color",
-                             glm::vec3(1.0f));
+                             sun_specular_color);
 
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D_ARRAY, block_textures_->id());

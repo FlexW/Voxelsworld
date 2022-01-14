@@ -381,7 +381,7 @@ void Application::main_loop()
 
     {
       // Draw world
-      world_->draw(player_->view_matrix(), projection_matrix);
+      world_->draw(player_->view_matrix(), projection_matrix, *debug_draw_);
 
       // Draw coordinate system
       if (is_draw_coordinate_system_)
