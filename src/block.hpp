@@ -8,22 +8,24 @@ public:
   static constexpr int width  = 1;
   static constexpr int height = 1;
 
-  enum class Type : std::uint8_t
+  enum class Type
   {
-    Grass = 0,
-    Dirt  = 1,
-    Water = 2,
-    Air   = 3,
+    Grass,
+    Dirt,
+    Water,
+    Oak,
+    OakLeaves,
+    Air,
   };
 
-  enum class Side : std::uint8_t
+  enum class Side
   {
-    Top    = 0,
-    Bottom = 1,
-    Left   = 2,
-    Right  = 3,
-    Front  = 4,
-    Back   = 5,
+    Top,
+    Bottom,
+    Left,
+    Right,
+    Front,
+    Back,
   };
 
   void               set_type(Type type);

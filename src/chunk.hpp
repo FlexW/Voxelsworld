@@ -56,6 +56,15 @@ private:
   float water_level_;
   float terraces_;
 
+  int min_tree_height_;
+  int max_tree_height_;
+
+  int min_leaves_radius_;
+  int max_leaves_radius_;
+
+  int tree_density_;
+  int leave_density_;
+
   bool is_generated_      = false;
   bool is_mesh_generated_ = false;
 

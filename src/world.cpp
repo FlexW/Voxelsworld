@@ -121,6 +121,15 @@ void World::init()
   const Image water_image{"data/water.png"};
   assert(water_image.channels_count() == 4);
 
+  const Image log_oak_image{"data/log_oak.png"};
+  assert(log_oak_image.channels_count() == 4);
+
+  const Image log_oak_top_image{"data/log_oak_top.png"};
+  assert(log_oak_top_image.channels_count() == 4);
+
+  const Image oak_leaves_image{"data/leaves_oak.png"};
+  assert(oak_leaves_image.channels_count() == 4);
+
   block_textures_ = std::make_unique<GlTextureArray>();
   block_textures_->set_data({
       // Order must match block_texture_index()
@@ -143,6 +152,21 @@ void World::init()
           water_image.data(),
           water_image.width(),
           water_image.height(),
+      },
+      {
+          log_oak_image.data(),
+          log_oak_image.width(),
+          log_oak_image.height(),
+      },
+      {
+          log_oak_top_image.data(),
+          log_oak_top_image.width(),
+          log_oak_top_image.height(),
+      },
+      {
+          oak_leaves_image.data(),
+          oak_leaves_image.width(),
+          oak_leaves_image.height(),
       },
   });
 
@@ -180,6 +204,25 @@ int World::block_texture_index(Block::Type block_type,
   case Block::Type::Water:
   {
     return 3;
+  }
+  case Block::Type::Oak:
+  {
+    switch (block_side)
+    {
+    case Block::Side::Top:
+      return 5;
+    case Block::Side::Bottom:
+      return 5;
+    case Block::Side::Front:
+    case Block::Side::Back:
+    case Block::Side::Left:
+    case Block::Side::Right:
+      return 4;
+    }
+  }
+  case Block::Type::OakLeaves:
+  {
+    return 6;
   }
   case Block::Type::Air:
     assert(0);

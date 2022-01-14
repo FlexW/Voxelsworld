@@ -3,6 +3,7 @@
 #include "block.hpp"
 #include "gl/gl_index_buffer.hpp"
 #include "gl/gl_vertex_buffer.hpp"
+#include "glm/gtc/noise.hpp"
 #include "math.hpp"
 #include "texture_atlas.hpp"
 #include "world.hpp"
@@ -10,6 +11,7 @@
 #include <cassert>
 #include <limits>
 #include <memory>
+#include <random>
 
 int Chunk::width()
 {
@@ -42,7 +44,13 @@ Chunk::Chunk()
   e_            = config.config_value_float("Chunk", "e", 11.3);
   fudge_factor_ = config.config_value_float("Chunk", "fudge_factor", 1.1);
   water_level_  = config.config_value_float("Chunk", "water_level", 5.0);
-  terraces_     = config.config_value_float("Chunk", "terraces", 180.0);
+  terraces_          = config.config_value_float("Chunk", "terraces", 180.0);
+  tree_density_      = config.config_value_int("Chunk", "tree_density", 6);
+  min_tree_height_   = config.config_value_int("Chunk", "min_tree_height", 5);
+  max_tree_height_   = config.config_value_int("Chunk", "max_tree_height", 11);
+  min_leaves_radius_ = config.config_value_int("Chunk", "min_leaves_radius", 3);
+  max_leaves_radius_ = config.config_value_int("Chunk", "max_leaves_radius", 5);
+  leave_density_     = config.config_value_int("Chunk", "leaves_density", 2);
 
   blocks_.resize(width());
   for (int x = 0; x < blocks_.size(); ++x)
@@ -68,6 +76,25 @@ void Chunk::generate(const glm::vec3 &position, const World &world)
                          static_cast<int>(position.y),
                          static_cast<int>(position.z));
 
+  // Generate blue noise
+  std::vector<std::vector<float>> blue_noise;
+  blue_noise.resize(blocks_.size());
+  for (int x = 0; x < blocks_.size(); ++x)
+  {
+    blue_noise[x].resize(blocks_[x].size());
+    for (int z = 0; z < blocks_.size(); ++z)
+    {
+      const auto world_position =
+          block_position_to_world_position(glm::ivec3{x, 0, z});
+
+      auto position_x = world_position.x + 0.5f;
+      auto position_z = world_position.z + 0.5f;
+
+      blue_noise[x][z] =
+          glm::simplex(glm::vec2{50.0f * position_x, 50.0f * position_z});
+    }
+  }
+
   for (int x = 0; x < blocks_.size(); ++x)
   {
     for (int z = 0; z < blocks_[x].size(); ++z)
@@ -77,6 +104,29 @@ void Chunk::generate(const glm::vec3 &position, const World &world)
 
       auto position_x = world_position.x + 0.5f;
       auto position_z = world_position.z + 0.5f;
+
+      // Calculate if a tree needs to be placed
+      double max = 0;
+      // there are more efficient algorithms than this
+      for (int yn = x - tree_density_; yn <= x + tree_density_; yn++)
+      {
+        for (int xn = z - tree_density_; xn <= z + tree_density_; xn++)
+        {
+          if (0 <= yn && yn < width() && 0 <= xn && xn < width())
+          {
+            const auto e = blue_noise[yn][xn];
+            if (e > max)
+            {
+              max = e;
+            }
+          }
+        }
+      }
+      bool place_tree = false;
+      if (blue_noise[x][z] == max)
+      {
+        place_tree = true;
+      }
 
       const auto noise =
           c1_ * glm::simplex(glm::vec2{position_x * frequency1_ - 1.3f,
@@ -93,6 +143,12 @@ void Chunk::generate(const glm::vec3 &position, const World &world)
       normalized_noise = glm::round(normalized_noise * terraces_) / terraces_;
 
       auto height = static_cast<int>(normalized_noise * Chunk::height());
+      std::mt19937 rng(94);
+      std::uniform_int_distribution<int> tree_height_gen(min_tree_height_,
+                                                         max_tree_height_);
+      std::uniform_int_distribution<int> leave_radius_gen(min_leaves_radius_,
+                                                          max_leaves_radius_);
+      std::uniform_int_distribution<int> leave_density_gen(0, leave_density_);
 
       for (int y = 0; y <= height || y <= water_level_; ++y)
       {
@@ -107,6 +163,54 @@ void Chunk::generate(const glm::vec3 &position, const World &world)
           else
           {
             block.set_type(Block::Type::Grass);
+
+            // Check if we need to place a tree
+            if (place_tree)
+            {
+              // Place tree
+              const auto tree_height = tree_height_gen(rng);
+              for (int i = y + 1;
+                   i < y + tree_height && i < blocks_[x][z].size();
+                   ++i)
+              {
+                blocks_[x][z][i].set_type(Block::Type::Oak);
+              }
+
+              // Place leaves
+              const auto leave_radius = leave_radius_gen(rng);
+              for (int leave_x = -leave_radius; leave_x < leave_radius + 1;
+                   ++leave_x)
+              {
+                for (int leave_z = -leave_radius; leave_z < leave_radius + 1;
+                     ++leave_z)
+                {
+                  for (int leave_y = -leave_radius; leave_y < leave_radius + 1;
+                       ++leave_y)
+                  {
+                    const auto real_leave_x = x + leave_x;
+                    const auto real_leave_y = tree_height + y + leave_y;
+                    const auto real_leave_z = z + leave_z;
+
+                    if (real_leave_x < 0 || real_leave_x >= Chunk::width() ||
+                        real_leave_z < 0 || real_leave_z >= Chunk::width() ||
+                        real_leave_y < 0 || real_leave_y >= Chunk::height())
+                    {
+                      continue;
+                    }
+                    if (leave_density_gen(rng) != leave_density_)
+                    {
+                      continue;
+                    }
+                    if (blocks_[real_leave_x][real_leave_z][real_leave_y]
+                            .type() == Block::Type::Air)
+                    {
+                      blocks_[real_leave_x][real_leave_z][real_leave_y]
+                          .set_type(Block::Type::OakLeaves);
+                    }
+                  }
+                }
+              }
+            }
           }
         }
         else if (y < height)
@@ -120,7 +224,6 @@ void Chunk::generate(const glm::vec3 &position, const World &world)
       }
     }
   }
-
   is_generated_ = true;
 }
 

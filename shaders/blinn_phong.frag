@@ -49,20 +49,24 @@ vec3 blinn_phong_directional_light(vec3 ambient_color,
   return ambient + diffuse + specular;
 }
 
-vec3 calc_diffuse_color()
+vec4 calc_diffuse_color()
 {
-    return texture(in_diffuse_tex, vec3(fs_in.tex_coord, float(fs_in.tex_index))).xyz;
+    return texture(in_diffuse_tex, vec3(fs_in.tex_coord, float(fs_in.tex_index)));
 }
 
 void main()
 {
-  vec3 diffuse_color  = calc_diffuse_color();
-  vec3 ambient_color  = diffuse_color;
-  vec3 specular_color = diffuse_color;
+  vec4 diffuse_color  = calc_diffuse_color();
+  if (diffuse_color.a < 0.0001f)
+  {
+      discard;
+  }
+  vec3 ambient_color  = diffuse_color.rgb;
+  vec3 specular_color = diffuse_color.rgb;
 
   vec3 color = vec3(0.0f);
   color += blinn_phong_directional_light(ambient_color,
-                                         diffuse_color,
+                                         diffuse_color.rgb,
                                          specular_color);
   out_color = vec4(color, 1.0);
 }
