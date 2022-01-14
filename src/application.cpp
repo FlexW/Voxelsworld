@@ -4,6 +4,7 @@
 #include "player.hpp"
 #include "time.hpp"
 
+#include <GL/gl.h>
 #include <cstdlib>
 #include <iostream>
 #include <memory>
@@ -314,6 +315,8 @@ void Application::init()
   }
 
   glEnable(GL_DEPTH_TEST);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   is_draw_wireframe_ = config_.config_value_bool("OpenGL", "wireframe", false);
   if (is_draw_wireframe_)
@@ -341,9 +344,6 @@ void Application::init()
 
   // Create player
   player_ = std::make_unique<Player>();
-
-  world_shader_ = std::make_unique<GlShader>();
-  world_shader_->init("shaders/blinn_phong.vert", "shaders/blinn_phong.frag");
 }
 
 void Application::main_loop()
@@ -381,23 +381,7 @@ void Application::main_loop()
 
     {
       // Draw world
-      world_shader_->bind();
-      world_shader_->set_uniform("model_matrix", glm::mat4(1.0f));
-      world_shader_->set_uniform("view_matrix", player_->view_matrix());
-      world_shader_->set_uniform("projection_matrix", projection_matrix);
-
-      // Lights
-      world_shader_->set_uniform("directional_light.direction",
-                                 glm::normalize(glm::vec3(-1.0f, -1.0f, 0.0f)));
-      world_shader_->set_uniform("directional_light.ambient_color",
-                                 glm::vec3(0.6f));
-      world_shader_->set_uniform("directional_light.diffuse_color",
-                                 glm::vec3(0.9f));
-      world_shader_->set_uniform("directional_light.specular_color",
-                                 glm::vec3(1.0f));
-
-      world_->draw(*world_shader_);
-      world_shader_->unbind();
+      world_->draw(player_->view_matrix(), projection_matrix);
 
       // Draw coordinate system
       if (is_draw_coordinate_system_)

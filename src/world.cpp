@@ -145,6 +145,12 @@ void World::init()
           water_image.height(),
       },
   });
+
+  world_shader_ = std::make_unique<GlShader>();
+  world_shader_->init("shaders/blinn_phong.vert", "shaders/blinn_phong.frag");
+
+  water_shader_ = std::make_unique<GlShader>();
+  water_shader_->init("shaders/water.vert", "shaders/water.frag");
 }
 
 int World::block_texture_index(Block::Type block_type,
@@ -317,11 +323,31 @@ const Chunk &World::chunk(const glm::ivec3 &position) const
   return chunks_[storage_position.x][storage_position.z];
 }
 
-void World::draw(GlShader &shader)
+void World::draw(const glm::mat4 &view_matrix,
+                 const glm::mat4 &projection_matrix)
 {
+  world_shader_->bind();
+  world_shader_->set_uniform("model_matrix", glm::mat4(1.0f));
+  world_shader_->set_uniform("view_matrix", view_matrix);
+  world_shader_->set_uniform("projection_matrix", projection_matrix);
+
+  // Lights
+  world_shader_->set_uniform("directional_light.direction",
+                             glm::normalize(glm::vec3(-1.0f, -1.0f, 0.0f)));
+  world_shader_->set_uniform("directional_light.ambient_color",
+                             glm::vec3(0.6f));
+  world_shader_->set_uniform("directional_light.diffuse_color",
+                             glm::vec3(0.9f));
+  world_shader_->set_uniform("directional_light.specular_color",
+                             glm::vec3(1.0f));
+
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D_ARRAY, block_textures_->id());
 
   const auto current_chunk_position =
       position_to_chunk_position(player_position_);
+
+  // First draw solid blocks
   for (int x = 0; x < chunks_.size(); ++x)
   {
     for (int z = 0; z < chunks_[x].size(); ++z)
@@ -339,14 +365,53 @@ void World::draw(GlShader &shader)
                          glm::vec3(chunk_position.x * Chunk::width(),
                                    0,
                                    chunk_position.z * Chunk::width()));
-      shader.set_uniform("model_matrix", chunk_model_matrix);
+      world_shader_->set_uniform("model_matrix", chunk_model_matrix);
 
-      // Material
-      glActiveTexture(GL_TEXTURE0);
-      glBindTexture(GL_TEXTURE_2D_ARRAY, block_textures_->id());
-      // shader.set_uniform("in_diffuse_tex",
-      //                    static_cast<int>(block_textures_->id()));
-      c.draw(shader);
+      c.draw(*world_shader_);
+    }
+  }
+
+  world_shader_->unbind();
+
+  water_shader_->bind();
+  water_shader_->set_uniform("model_matrix", glm::mat4(1.0f));
+  water_shader_->set_uniform("view_matrix", view_matrix);
+  water_shader_->set_uniform("projection_matrix", projection_matrix);
+
+  // Lights
+  water_shader_->set_uniform("directional_light.direction",
+                             glm::normalize(glm::vec3(-1.0f, -1.0f, 0.0f)));
+  water_shader_->set_uniform("directional_light.ambient_color",
+                             glm::vec3(0.6f));
+  water_shader_->set_uniform("directional_light.diffuse_color",
+                             glm::vec3(0.9f));
+  water_shader_->set_uniform("directional_light.specular_color",
+                             glm::vec3(1.0f));
+
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D_ARRAY, block_textures_->id());
+
+  // Then draw transparent water
+  for (int x = 0; x < chunks_.size(); ++x)
+  {
+    for (int z = 0; z < chunks_[x].size(); ++z)
+    {
+      // FIXME: This will fail for border chunks
+      auto &c = chunks_[x][z];
+      if (!c.is_mesh_generated())
+      {
+        continue;
+      }
+      const auto chunk_position = c.position();
+      // Set model matrix
+      const auto chunk_model_matrix =
+          glm::translate(glm::mat4(1.0f),
+                         glm::vec3(chunk_position.x * Chunk::width(),
+                                   0,
+                                   chunk_position.z * Chunk::width()));
+      water_shader_->set_uniform("model_matrix", chunk_model_matrix);
+
+      c.draw_water(*water_shader_);
     }
   }
 }

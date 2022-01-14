@@ -27,6 +27,7 @@ public:
   void regenerate_mesh(const World &world);
 
   void draw(GlShader &shader);
+  void draw_water(GlShader &shader);
 
   glm::ivec3 position() const;
 
@@ -37,7 +38,8 @@ public:
   place_block(World &world, const glm::ivec3 &position, Block::Type block_type);
 
 private:
-  std::vector<const GlVertexBuffer *> vertex_buffers_;
+  std::vector<const GlVertexBuffer *>          vertex_buffers_;
+  std::vector<const GlVertexBuffer *>          water_vertex_buffers_;
   std::vector<std::vector<std::vector<Block>>> blocks_;
 
   glm::ivec3 position_{};
@@ -62,7 +64,13 @@ private:
   std::unique_ptr<GlVertexBuffer> vertex_buffer_tex_coords_{};
   std::unique_ptr<GlVertexBuffer> vertex_buffer_tex_indices_{};
 
+  std::unique_ptr<GlVertexBuffer> vertex_buffer_water_positions_{};
+  std::unique_ptr<GlVertexBuffer> vertex_buffer_water_normals_{};
+  std::unique_ptr<GlVertexBuffer> vertex_buffer_water_tex_coords_{};
+  std::unique_ptr<GlVertexBuffer> vertex_buffer_water_tex_indices_{};
+
   std::unique_ptr<GlIndexBuffer> index_buffer_{};
+  std::unique_ptr<GlIndexBuffer> water_index_buffer_{};
 
   [[nodiscard]] bool is_block(const glm::ivec3 &position,
                               Block::Type       type) const;
@@ -82,16 +90,26 @@ private:
   void regenerate_chunks_if_border_block(World            &world,
                                          const glm::ivec3 &position);
 
-  void send_mesh_data_to_gpu(const std::vector<glm::vec3> &positions,
-                             const std::vector<glm::vec3> &normals,
-                             const std::vector<glm::vec2> &tex_coords,
-                             const std::vector<int>       &tex_indices,
-                             const std::vector<unsigned>  &indices);
+  void send_mesh_data_to_gpu(const std::vector<glm::vec3> &block_positions,
+                             const std::vector<glm::vec3> &block_normals,
+                             const std::vector<glm::vec2> &block_tex_coords,
+                             const std::vector<int>       &block_tex_indices,
+                             const std::vector<unsigned>  &block_indices,
+                             const std::vector<glm::vec3> &water_positions,
+                             const std::vector<glm::vec3> &water_normals,
+                             const std::vector<glm::vec2> &water_tex_coords,
+                             const std::vector<int>       &water_tex_indices,
+                             const std::vector<unsigned>  &water_indices);
 
   void generate_mesh_data(const World            &world,
-                          std::vector<glm::vec3> &positions,
-                          std::vector<glm::vec3> &normals,
-                          std::vector<glm::vec2> &tex_coords,
-                          std::vector<int>       &tex_indices,
-                          std::vector<unsigned>  &indices);
+                          std::vector<glm::vec3> &block_positions,
+                          std::vector<glm::vec3> &block_normals,
+                          std::vector<glm::vec2> &block_tex_coords,
+                          std::vector<int>       &block_tex_indices,
+                          std::vector<unsigned>  &block_indices,
+                          std::vector<glm::vec3> &water_positions,
+                          std::vector<glm::vec3> &water_normals,
+                          std::vector<glm::vec2> &water_tex_coords,
+                          std::vector<int>       &water_tex_indices,
+                          std::vector<unsigned>  &water_indices);
 };

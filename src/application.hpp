@@ -64,8 +64,6 @@ private:
 
   GLFWwindow *window_{};
 
-  std::unique_ptr<GlShader> world_shader_{};
-
   Application()                    = default;
   Application(const Application &) = delete;
   void operator=(const Application &) = delete;

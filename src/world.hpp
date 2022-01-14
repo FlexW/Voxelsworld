@@ -20,7 +20,7 @@ public:
 
   void set_player_position(const glm::vec3 &position);
 
-  void draw(GlShader &shader);
+  void draw(const glm::mat4 &view_matrix, const glm::mat4 &projection_matrix);
 
   [[nodiscard]] bool is_block(const glm::ivec3 &world_position) const;
   [[nodiscard]] bool is_block(const glm::ivec3 &world_position,
@@ -42,6 +42,9 @@ private:
   glm::vec3 player_position_ = glm::vec3(0.0f);
 
   std::unique_ptr<GlTextureArray> block_textures_;
+
+  std::unique_ptr<GlShader> world_shader_{};
+  std::unique_ptr<GlShader> water_shader_{};
 
   bool is_chunk(const glm::ivec3 &position) const;
 

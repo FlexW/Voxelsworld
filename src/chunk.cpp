@@ -33,12 +33,12 @@ Chunk::Chunk()
   const auto config = app->config();
 
   c1_           = config.config_value_float("Chunk", "c1", 1.0f);
-  c2_ = config.config_value_float("Chunk", "c2", 0.7f);
-  c3_  = config.config_value_float("Chunk", "c3", 0.008f);
-  div_        = config.config_value_float("Chunk", "div", 1.0f);
-  frequency1_ = config.config_value_float("Chunk", "frequency1", 0.0003f);
-  frequency2_ = config.config_value_float("Chunk", "frequency2", 0.008f);
-  frequency3_ = config.config_value_float("Chunk", "frequency3", 0.1f);
+  c2_           = config.config_value_float("Chunk", "c2", 0.7f);
+  c3_           = config.config_value_float("Chunk", "c3", 0.008f);
+  div_          = config.config_value_float("Chunk", "div", 1.0f);
+  frequency1_   = config.config_value_float("Chunk", "frequency1", 0.0003f);
+  frequency2_   = config.config_value_float("Chunk", "frequency2", 0.008f);
+  frequency3_   = config.config_value_float("Chunk", "frequency3", 0.1f);
   e_            = config.config_value_float("Chunk", "e", 11.3);
   fudge_factor_ = config.config_value_float("Chunk", "fudge_factor", 1.1);
   water_level_  = config.config_value_float("Chunk", "water_level", 5.0);
@@ -153,13 +153,19 @@ bool Chunk::is_block(const glm::ivec3 &position,
 }
 
 void Chunk::generate_mesh_data(const World            &world,
-                               std::vector<glm::vec3> &positions,
-                               std::vector<glm::vec3> &normals,
-                               std::vector<glm::vec2> &tex_coords,
-                               std::vector<int>       &tex_indices,
-                               std::vector<unsigned>  &indices)
+                               std::vector<glm::vec3> &block_positions,
+                               std::vector<glm::vec3> &block_normals,
+                               std::vector<glm::vec2> &block_tex_coords,
+                               std::vector<int>       &block_tex_indices,
+                               std::vector<unsigned>  &block_indices,
+                               std::vector<glm::vec3> &water_positions,
+                               std::vector<glm::vec3> &water_normals,
+                               std::vector<glm::vec2> &water_tex_coords,
+                               std::vector<int>       &water_tex_indices,
+                               std::vector<unsigned>  &water_indices)
 {
-  int current_index = 0;
+  int current_index_block = 0;
+  int current_index_water = 0;
   for (int x = 0; x < blocks_.size(); ++x)
   {
     for (int z = 0; z < blocks_[x].size(); ++z)
@@ -169,212 +175,230 @@ void Chunk::generate_mesh_data(const World            &world,
         const auto block_type = blocks_[x][z][y].type();
         const auto block_height =
             block_type == Block::Type::Water ? 0.9f : 1.0f;
+
+        auto positions     = &block_positions;
+        auto normals       = &block_normals;
+        auto tex_coords    = &block_tex_coords;
+        auto tex_indices   = &block_tex_indices;
+        auto indices       = &block_indices;
+        auto current_index = &current_index_block;
+
         if (block_type == Block::Type::Air)
         {
           continue;
         }
+        else if (block_type == Block::Type::Water)
+        {
+          positions     = &water_positions;
+          normals       = &water_normals;
+          tex_coords    = &water_tex_coords;
+          tex_indices   = &water_tex_indices;
+          indices       = &water_indices;
+          current_index = &current_index_water;
+        }
+
         // Front
         if (!is_block(glm::ivec3{x, y, z + 1}, world, block_type))
         {
-          positions.emplace_back(x + 0.0f, y + block_height, z + 1.0f);
-          positions.emplace_back(x + 0.0f, y + 0.0f, z + 1.0f);
-          positions.emplace_back(x + 1.0f, y + 0.0f, z + 1.0f);
-          positions.emplace_back(x + 1.0f, y + block_height, z + 1.0f);
+          positions->emplace_back(x + 0.0f, y + block_height, z + 1.0f);
+          positions->emplace_back(x + 0.0f, y + 0.0f, z + 1.0f);
+          positions->emplace_back(x + 1.0f, y + 0.0f, z + 1.0f);
+          positions->emplace_back(x + 1.0f, y + block_height, z + 1.0f);
 
-          normals.emplace_back(0.0f, 0.0f, 1.0f);
-          normals.emplace_back(0.0f, 0.0f, 1.0f);
-          normals.emplace_back(0.0f, 0.0f, 1.0f);
-          normals.emplace_back(0.0f, 0.0f, 1.0f);
+          normals->emplace_back(0.0f, 0.0f, 1.0f);
+          normals->emplace_back(0.0f, 0.0f, 1.0f);
+          normals->emplace_back(0.0f, 0.0f, 1.0f);
+          normals->emplace_back(0.0f, 0.0f, 1.0f);
 
-          tex_coords.emplace_back(0.0f, 1.0f);
-          tex_coords.emplace_back(0.0f, 0.0f);
-          tex_coords.emplace_back(1.0f, 0.0f);
-          tex_coords.emplace_back(1.0f, 1.0f);
+          tex_coords->emplace_back(0.0f, 1.0f);
+          tex_coords->emplace_back(0.0f, 0.0f);
+          tex_coords->emplace_back(1.0f, 0.0f);
+          tex_coords->emplace_back(1.0f, 1.0f);
 
           const auto tex_index =
               world.block_texture_index(block_type, Block::Side::Front);
-          tex_indices.push_back(tex_index);
-          tex_indices.push_back(tex_index);
-          tex_indices.push_back(tex_index);
-          tex_indices.push_back(tex_index);
+          tex_indices->push_back(tex_index);
+          tex_indices->push_back(tex_index);
+          tex_indices->push_back(tex_index);
+          tex_indices->push_back(tex_index);
 
-          indices.push_back(current_index + 0);
-          indices.push_back(current_index + 1);
-          indices.push_back(current_index + 2);
-          indices.push_back(current_index + 2);
-          indices.push_back(current_index + 3);
-          indices.push_back(current_index + 0);
-          current_index += 4;
+          indices->push_back(*current_index + 0);
+          indices->push_back(*current_index + 1);
+          indices->push_back(*current_index + 2);
+          indices->push_back(*current_index + 2);
+          indices->push_back(*current_index + 3);
+          indices->push_back(*current_index + 0);
+          *current_index += 4;
         }
 
         // Back
         if (!is_block(glm::ivec3{x, y, z - 1}, world, block_type))
         {
-          positions.emplace_back(x + 0.0f, y + block_height, z + 0.0f);
-          positions.emplace_back(x + 1.0f, y + block_height, z + 0.0f);
-          positions.emplace_back(x + 1.0f, y + 0.0f, z + 0.0f);
-          positions.emplace_back(x + 0.0f, y + 0.0f, z + 0.0f);
+          positions->emplace_back(x + 0.0f, y + block_height, z + 0.0f);
+          positions->emplace_back(x + 1.0f, y + block_height, z + 0.0f);
+          positions->emplace_back(x + 1.0f, y + 0.0f, z + 0.0f);
+          positions->emplace_back(x + 0.0f, y + 0.0f, z + 0.0f);
 
-          normals.emplace_back(0.0f, 0.0f, -1.0f);
-          normals.emplace_back(0.0f, 0.0f, -1.0f);
-          normals.emplace_back(0.0f, 0.0f, -1.0f);
-          normals.emplace_back(0.0f, 0.0f, -1.0f);
+          normals->emplace_back(0.0f, 0.0f, -1.0f);
+          normals->emplace_back(0.0f, 0.0f, -1.0f);
+          normals->emplace_back(0.0f, 0.0f, -1.0f);
+          normals->emplace_back(0.0f, 0.0f, -1.0f);
 
-          tex_coords.emplace_back(1.0f, 1.0f);
-          tex_coords.emplace_back(0.0f, 1.0f);
-          tex_coords.emplace_back(0.0f, 0.0f);
-          tex_coords.emplace_back(1.0f, 0.0f);
+          tex_coords->emplace_back(1.0f, 1.0f);
+          tex_coords->emplace_back(0.0f, 1.0f);
+          tex_coords->emplace_back(0.0f, 0.0f);
+          tex_coords->emplace_back(1.0f, 0.0f);
 
           const auto tex_index =
               world.block_texture_index(block_type, Block::Side::Back);
-          tex_indices.push_back(tex_index);
-          tex_indices.push_back(tex_index);
-          tex_indices.push_back(tex_index);
-          tex_indices.push_back(tex_index);
+          tex_indices->push_back(tex_index);
+          tex_indices->push_back(tex_index);
+          tex_indices->push_back(tex_index);
+          tex_indices->push_back(tex_index);
 
-          indices.push_back(current_index + 0);
-          indices.push_back(current_index + 1);
-          indices.push_back(current_index + 2);
-          indices.push_back(current_index + 2);
-          indices.push_back(current_index + 3);
-          indices.push_back(current_index + 0);
-          current_index += 4;
+          indices->push_back(*current_index + 0);
+          indices->push_back(*current_index + 1);
+          indices->push_back(*current_index + 2);
+          indices->push_back(*current_index + 2);
+          indices->push_back(*current_index + 3);
+          indices->push_back(*current_index + 0);
+          *current_index += 4;
         }
 
         // Top
         if (!is_block(glm::ivec3{x, y + 1, z}, world, block_type))
         {
-          positions.emplace_back(x + 0.0f, y + block_height, z + 1.0f);
-          positions.emplace_back(x + 1.0f, y + block_height, z + 1.0f);
-          positions.emplace_back(x + 1.0f, y + block_height, z + 0.0f);
-          positions.emplace_back(x + 0.0f, y + block_height, z + 0.0f);
+          positions->emplace_back(x + 0.0f, y + block_height, z + 1.0f);
+          positions->emplace_back(x + 1.0f, y + block_height, z + 1.0f);
+          positions->emplace_back(x + 1.0f, y + block_height, z + 0.0f);
+          positions->emplace_back(x + 0.0f, y + block_height, z + 0.0f);
 
-          normals.emplace_back(0.0f, 1.0f, 0.0f);
-          normals.emplace_back(0.0f, 1.0f, 0.0f);
-          normals.emplace_back(0.0f, 1.0f, 0.0f);
-          normals.emplace_back(0.0f, 1.0f, 0.0f);
+          normals->emplace_back(0.0f, 1.0f, 0.0f);
+          normals->emplace_back(0.0f, 1.0f, 0.0f);
+          normals->emplace_back(0.0f, 1.0f, 0.0f);
+          normals->emplace_back(0.0f, 1.0f, 0.0f);
 
-          tex_coords.emplace_back(0.0f, 0.0f);
-          tex_coords.emplace_back(1.0f, 0.0f);
-          tex_coords.emplace_back(1.0f, 1.0f);
-          tex_coords.emplace_back(0.0f, 1.0f);
+          tex_coords->emplace_back(0.0f, 0.0f);
+          tex_coords->emplace_back(1.0f, 0.0f);
+          tex_coords->emplace_back(1.0f, 1.0f);
+          tex_coords->emplace_back(0.0f, 1.0f);
 
           const auto tex_index =
               world.block_texture_index(block_type, Block::Side::Top);
-          tex_indices.push_back(tex_index);
-          tex_indices.push_back(tex_index);
-          tex_indices.push_back(tex_index);
-          tex_indices.push_back(tex_index);
+          tex_indices->push_back(tex_index);
+          tex_indices->push_back(tex_index);
+          tex_indices->push_back(tex_index);
+          tex_indices->push_back(tex_index);
 
-          indices.push_back(current_index + 0);
-          indices.push_back(current_index + 1);
-          indices.push_back(current_index + 2);
-          indices.push_back(current_index + 2);
-          indices.push_back(current_index + 3);
-          indices.push_back(current_index + 0);
-          current_index += 4;
+          indices->push_back(*current_index + 0);
+          indices->push_back(*current_index + 1);
+          indices->push_back(*current_index + 2);
+          indices->push_back(*current_index + 2);
+          indices->push_back(*current_index + 3);
+          indices->push_back(*current_index + 0);
+          *current_index += 4;
         }
 
         // Bottom
         if (!is_block(glm::ivec3{x, y - 1, z}, world, block_type))
         {
-          positions.emplace_back(x + 0.0f, y + 0.0f, z + 1.0f);
-          positions.emplace_back(x + 0.0f, y + 0.0f, z + 0.0f);
-          positions.emplace_back(x + 1.0f, y + 0.0f, z + 0.0f);
-          positions.emplace_back(x + 1.0f, y + 0.0f, z + 1.0f);
+          positions->emplace_back(x + 0.0f, y + 0.0f, z + 1.0f);
+          positions->emplace_back(x + 0.0f, y + 0.0f, z + 0.0f);
+          positions->emplace_back(x + 1.0f, y + 0.0f, z + 0.0f);
+          positions->emplace_back(x + 1.0f, y + 0.0f, z + 1.0f);
 
-          normals.emplace_back(0.0f, -1.0f, 0.0f);
-          normals.emplace_back(0.0f, -1.0f, 0.0f);
-          normals.emplace_back(0.0f, -1.0f, 0.0f);
-          normals.emplace_back(0.0f, -1.0f, 0.0f);
+          normals->emplace_back(0.0f, -1.0f, 0.0f);
+          normals->emplace_back(0.0f, -1.0f, 0.0f);
+          normals->emplace_back(0.0f, -1.0f, 0.0f);
+          normals->emplace_back(0.0f, -1.0f, 0.0f);
 
-          tex_coords.emplace_back(0.0f, 1.0f);
-          tex_coords.emplace_back(0.0f, 0.0f);
-          tex_coords.emplace_back(1.0f, 0.0f);
-          tex_coords.emplace_back(1.0f, 1.0f);
+          tex_coords->emplace_back(0.0f, 1.0f);
+          tex_coords->emplace_back(0.0f, 0.0f);
+          tex_coords->emplace_back(1.0f, 0.0f);
+          tex_coords->emplace_back(1.0f, 1.0f);
 
           const auto tex_index =
               world.block_texture_index(block_type, Block::Side::Bottom);
-          tex_indices.push_back(tex_index);
-          tex_indices.push_back(tex_index);
-          tex_indices.push_back(tex_index);
-          tex_indices.push_back(tex_index);
+          tex_indices->push_back(tex_index);
+          tex_indices->push_back(tex_index);
+          tex_indices->push_back(tex_index);
+          tex_indices->push_back(tex_index);
 
-          indices.push_back(current_index + 0);
-          indices.push_back(current_index + 1);
-          indices.push_back(current_index + 2);
-          indices.push_back(current_index + 2);
-          indices.push_back(current_index + 3);
-          indices.push_back(current_index + 0);
-          current_index += 4;
+          indices->push_back(*current_index + 0);
+          indices->push_back(*current_index + 1);
+          indices->push_back(*current_index + 2);
+          indices->push_back(*current_index + 2);
+          indices->push_back(*current_index + 3);
+          indices->push_back(*current_index + 0);
+          *current_index += 4;
         }
 
         // Left
         if (!is_block(glm::ivec3{x - 1, y, z}, world, block_type))
         {
-          positions.emplace_back(x + 0.0f, y + 0.0f, z + 1.0f);
-          positions.emplace_back(x + 0.0f, y + block_height, z + 1.0f);
-          positions.emplace_back(x + 0.0f, y + block_height, z + 0.0f);
-          positions.emplace_back(x + 0.0f, y + 0.0f, z + 0.0f);
+          positions->emplace_back(x + 0.0f, y + 0.0f, z + 1.0f);
+          positions->emplace_back(x + 0.0f, y + block_height, z + 1.0f);
+          positions->emplace_back(x + 0.0f, y + block_height, z + 0.0f);
+          positions->emplace_back(x + 0.0f, y + 0.0f, z + 0.0f);
 
-          normals.emplace_back(-1.0f, 0.0f, 0.0f);
-          normals.emplace_back(-1.0f, 0.0f, 0.0f);
-          normals.emplace_back(-1.0f, 0.0f, 0.0f);
-          normals.emplace_back(-1.0f, 0.0f, 0.0f);
+          normals->emplace_back(-1.0f, 0.0f, 0.0f);
+          normals->emplace_back(-1.0f, 0.0f, 0.0f);
+          normals->emplace_back(-1.0f, 0.0f, 0.0f);
+          normals->emplace_back(-1.0f, 0.0f, 0.0f);
 
-          tex_coords.emplace_back(1.0f, 0.0f);
-          tex_coords.emplace_back(1.0f, 1.0f);
-          tex_coords.emplace_back(0.0f, 1.0f);
-          tex_coords.emplace_back(0.0f, 0.0f);
+          tex_coords->emplace_back(1.0f, 0.0f);
+          tex_coords->emplace_back(1.0f, 1.0f);
+          tex_coords->emplace_back(0.0f, 1.0f);
+          tex_coords->emplace_back(0.0f, 0.0f);
 
           const auto tex_index =
               world.block_texture_index(block_type, Block::Side::Left);
-          tex_indices.push_back(tex_index);
-          tex_indices.push_back(tex_index);
-          tex_indices.push_back(tex_index);
-          tex_indices.push_back(tex_index);
+          tex_indices->push_back(tex_index);
+          tex_indices->push_back(tex_index);
+          tex_indices->push_back(tex_index);
+          tex_indices->push_back(tex_index);
 
-          indices.push_back(current_index + 0);
-          indices.push_back(current_index + 1);
-          indices.push_back(current_index + 2);
-          indices.push_back(current_index + 2);
-          indices.push_back(current_index + 3);
-          indices.push_back(current_index + 0);
-          current_index += 4;
+          indices->push_back(*current_index + 0);
+          indices->push_back(*current_index + 1);
+          indices->push_back(*current_index + 2);
+          indices->push_back(*current_index + 2);
+          indices->push_back(*current_index + 3);
+          indices->push_back(*current_index + 0);
+          *current_index += 4;
         }
 
         // Right
         if (!is_block(glm::ivec3{x + 1, y, z}, world, block_type))
         {
-          positions.emplace_back(x + 1.0f, y + 0.0f, z + 1.0f);
-          positions.emplace_back(x + 1.0f, y + 0.0f, z + 0.0f);
-          positions.emplace_back(x + 1.0f, y + block_height, z + 0.0f);
-          positions.emplace_back(x + 1.0f, y + block_height, z + 1.0f);
+          positions->emplace_back(x + 1.0f, y + 0.0f, z + 1.0f);
+          positions->emplace_back(x + 1.0f, y + 0.0f, z + 0.0f);
+          positions->emplace_back(x + 1.0f, y + block_height, z + 0.0f);
+          positions->emplace_back(x + 1.0f, y + block_height, z + 1.0f);
 
-          normals.emplace_back(1.0f, 0.0f, 0.0f);
-          normals.emplace_back(1.0f, 0.0f, 0.0f);
-          normals.emplace_back(1.0f, 0.0f, 0.0f);
-          normals.emplace_back(1.0f, 0.0f, 0.0f);
+          normals->emplace_back(1.0f, 0.0f, 0.0f);
+          normals->emplace_back(1.0f, 0.0f, 0.0f);
+          normals->emplace_back(1.0f, 0.0f, 0.0f);
+          normals->emplace_back(1.0f, 0.0f, 0.0f);
 
-          tex_coords.emplace_back(0.0f, 0.0f);
-          tex_coords.emplace_back(1.0f, 0.0f);
-          tex_coords.emplace_back(1.0f, 1.0f);
-          tex_coords.emplace_back(0.0f, 1.0f);
+          tex_coords->emplace_back(0.0f, 0.0f);
+          tex_coords->emplace_back(1.0f, 0.0f);
+          tex_coords->emplace_back(1.0f, 1.0f);
+          tex_coords->emplace_back(0.0f, 1.0f);
 
           const auto tex_index =
               world.block_texture_index(block_type, Block::Side::Right);
-          tex_indices.push_back(tex_index);
-          tex_indices.push_back(tex_index);
-          tex_indices.push_back(tex_index);
-          tex_indices.push_back(tex_index);
+          tex_indices->push_back(tex_index);
+          tex_indices->push_back(tex_index);
+          tex_indices->push_back(tex_index);
+          tex_indices->push_back(tex_index);
 
-          indices.push_back(current_index + 0);
-          indices.push_back(current_index + 1);
-          indices.push_back(current_index + 2);
-          indices.push_back(current_index + 2);
-          indices.push_back(current_index + 3);
-          indices.push_back(current_index + 0);
-          current_index += 4;
+          indices->push_back(*current_index + 0);
+          indices->push_back(*current_index + 1);
+          indices->push_back(*current_index + 2);
+          indices->push_back(*current_index + 2);
+          indices->push_back(*current_index + 3);
+          indices->push_back(*current_index + 0);
+          *current_index += 4;
         }
       }
     }
@@ -388,41 +412,74 @@ void Chunk::fill_mesh_data(const World &world)
   std::vector<glm::vec2> tex_coords;
   std::vector<int>       tex_indices;
   std::vector<unsigned>  indices;
+
+  std::vector<glm::vec3> water_positions;
+  std::vector<glm::vec3> water_normals;
+  std::vector<glm::vec2> water_tex_coords;
+  std::vector<int>       water_tex_indices;
+  std::vector<unsigned>  water_indices;
+
   generate_mesh_data(world,
                      positions,
                      normals,
                      tex_coords,
                      tex_indices,
-                     indices);
-  send_mesh_data_to_gpu(positions, normals, tex_coords, tex_indices, indices);
+                     indices,
+                     water_positions,
+                     water_normals,
+                     water_tex_coords,
+                     water_tex_indices,
+                     water_indices);
+
+  send_mesh_data_to_gpu(positions,
+                        normals,
+                        tex_coords,
+                        tex_indices,
+                        indices,
+                        water_positions,
+                        water_normals,
+                        water_tex_coords,
+                        water_tex_indices,
+                        water_indices);
 }
 
-void Chunk::send_mesh_data_to_gpu(const std::vector<glm::vec3> &positions,
-                                  const std::vector<glm::vec3> &normals,
-                                  const std::vector<glm::vec2> &tex_coords,
-                                  const std::vector<int>       &tex_indices,
-                                  const std::vector<unsigned>  &indices)
+void Chunk::send_mesh_data_to_gpu(
+    const std::vector<glm::vec3> &block_positions,
+    const std::vector<glm::vec3> &block_normals,
+    const std::vector<glm::vec2> &block_tex_coords,
+    const std::vector<int>       &block_tex_indices,
+    const std::vector<unsigned>  &block_indices,
+    const std::vector<glm::vec3> &water_positions,
+    const std::vector<glm::vec3> &water_normals,
+    const std::vector<glm::vec2> &water_tex_coords,
+    const std::vector<int>       &water_tex_indices,
+    const std::vector<unsigned>  &water_indices)
 {
   {
     GlVertexBufferLayout vec3_layout;
     vec3_layout.push_float(3);
-    vertex_buffer_positions_->set_data(positions, vec3_layout);
-    vertex_buffer_normals_->set_data(normals, vec3_layout);
+    vertex_buffer_positions_->set_data(block_positions, vec3_layout);
+    vertex_buffer_normals_->set_data(block_normals, vec3_layout);
+    vertex_buffer_water_positions_->set_data(water_positions, vec3_layout);
+    vertex_buffer_water_normals_->set_data(water_normals, vec3_layout);
   }
 
   {
     GlVertexBufferLayout int_layout;
     int_layout.push_int(1);
-    vertex_buffer_tex_indices_->set_data(tex_indices, int_layout);
+    vertex_buffer_tex_indices_->set_data(block_tex_indices, int_layout);
+    vertex_buffer_water_tex_indices_->set_data(water_tex_indices, int_layout);
   }
 
   {
     GlVertexBufferLayout vec2_layout;
     vec2_layout.push_float(2);
-    vertex_buffer_tex_coords_->set_data(tex_coords, vec2_layout);
+    vertex_buffer_tex_coords_->set_data(block_tex_coords, vec2_layout);
+    vertex_buffer_water_tex_coords_->set_data(water_tex_coords, vec2_layout);
   }
 
-  index_buffer_->set_data(indices);
+  index_buffer_->set_data(block_indices);
+  water_index_buffer_->set_data(water_indices);
 }
 
 void Chunk::regenerate_mesh(const World &world) { fill_mesh_data(world); }
@@ -461,6 +518,32 @@ void Chunk::generate_mesh(const World &world)
   vertex_buffers_.push_back(vertex_buffer_tex_coords_.get());
   vertex_buffers_.push_back(vertex_buffer_tex_indices_.get());
 
+  if (!vertex_buffer_water_positions_)
+  {
+    vertex_buffer_water_positions_ = std::make_unique<GlVertexBuffer>();
+  }
+  if (!vertex_buffer_water_normals_)
+  {
+    vertex_buffer_water_normals_ = std::make_unique<GlVertexBuffer>();
+  }
+  if (!vertex_buffer_water_tex_coords_)
+  {
+    vertex_buffer_water_tex_coords_ = std::make_unique<GlVertexBuffer>();
+  }
+  if (!vertex_buffer_water_tex_indices_)
+  {
+    vertex_buffer_water_tex_indices_ = std::make_unique<GlVertexBuffer>();
+  }
+  if (!water_index_buffer_)
+  {
+    water_index_buffer_ = std::make_unique<GlIndexBuffer>();
+  }
+
+  water_vertex_buffers_.push_back(vertex_buffer_water_positions_.get());
+  water_vertex_buffers_.push_back(vertex_buffer_water_normals_.get());
+  water_vertex_buffers_.push_back(vertex_buffer_water_tex_coords_.get());
+  water_vertex_buffers_.push_back(vertex_buffer_water_tex_indices_.get());
+
   fill_mesh_data(world);
 }
 
@@ -469,8 +552,21 @@ void Chunk::draw(GlShader &shader)
   assert(vertex_buffer_positions_ != nullptr &&
          vertex_buffer_normals_ != nullptr &&
          vertex_buffer_tex_coords_ != nullptr && index_buffer_ != nullptr);
+  if (index_buffer_->count() == 0)
+  {
+    return;
+  }
 
   shader.draw(vertex_buffers_, *index_buffer_);
+}
+
+void Chunk::draw_water(GlShader &shader)
+{
+  if (water_index_buffer_->count() == 0)
+  {
+    return;
+  }
+  shader.draw(water_vertex_buffers_, *water_index_buffer_);
 }
 
 glm::ivec3 Chunk::position() const { return position_; }
