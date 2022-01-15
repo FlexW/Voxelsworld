@@ -5,6 +5,7 @@ in VS_OUT
   vec3 position;
   vec3 normal;
   vec2 tex_coord;
+  float fog_factor;
   flat int tex_index;
 }
 fs_in;
@@ -19,6 +20,8 @@ struct DirectionalLight
   vec3 diffuse_color;
   vec3 specular_color;
 };
+
+uniform vec3 fog_color = vec3(0.53f, 0.81f, 0.92f);
 
 uniform sampler2DArray in_diffuse_tex;
 
@@ -68,5 +71,8 @@ void main()
   color += blinn_phong_directional_light(ambient_color,
                                          diffuse_color.rgb,
                                          specular_color);
+  // Add fog
+  color = fs_in.fog_factor * color + (1.0 - fs_in.fog_factor) * fog_color;
+
   out_color = vec4(color, 1.0);
 }

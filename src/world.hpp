@@ -51,6 +51,10 @@ private:
   std::unique_ptr<GlShader> world_shader_{};
   std::unique_ptr<GlShader> water_shader_{};
 
+  float     fog_start_;
+  float     fog_end_;
+  glm::vec3 fog_color_;
+
   bool is_chunk(const glm::ivec3 &position) const;
 
   glm::ivec3

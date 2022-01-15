@@ -10,11 +10,14 @@ out VS_OUT
   vec3 position;
   vec3 normal;
   vec2 tex_coord;
+  float fog_factor;
   flat int tex_index;
 } vs_out;
 
 uniform mat4 projection_matrix;
 uniform mat4 view_matrix;
+uniform float fog_start = 50.0;
+uniform float fog_end = 400.0;
 
 uniform mat4 model_matrix;
 
@@ -35,4 +38,7 @@ void main()
   vs_out.tex_index = in_tex_index;
 
   gl_Position = projection_matrix * P;
+
+  // Calculate linear fog
+  vs_out.fog_factor = clamp((fog_end - abs(P.z)) / (fog_end - fog_start), 0.0, 1.0);
 }

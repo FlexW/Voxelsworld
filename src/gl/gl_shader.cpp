@@ -263,6 +263,12 @@ void GlShader::set_uniform(const std::string &name, int value)
   glUniform1i(location, static_cast<int>(value));
 }
 
+void GlShader::set_uniform(const std::string &name, float value)
+{
+  GET_UNIFORM_OR_RETURN(name, location)
+  glUniform1f(location, value);
+}
+
 void GlShader::set_uniform(const std::string &name, const glm::vec3 &value)
 {
 

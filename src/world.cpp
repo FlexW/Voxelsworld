@@ -101,6 +101,16 @@ World::World()
                                                   "chunks_around_player",
                                                   chunks_around_player_);
   debug_sun_ = config.config_value_bool("World", "debug_sun", debug_sun_);
+
+  fog_start_ = config.config_value_float("World", "fog_start", fog_start_);
+  fog_end_   = config.config_value_float("World", "fog_end", fog_end_);
+  const auto fog_color_r =
+      config.config_value_float("World", "sky_color_r", 0.0f);
+  const auto fog_color_g =
+      config.config_value_float("World", "sky_color_g", 0.0f);
+  const auto fog_color_b =
+      config.config_value_float("World", "sky_color_b", 0.0f);
+  fog_color_ = glm::vec3{fog_color_r, fog_color_g, fog_color_b};
 }
 
 void World::init()
@@ -398,6 +408,11 @@ void World::draw(const glm::mat4 &view_matrix,
   world_shader_->set_uniform("directional_light.specular_color",
                              sun_specular_color);
 
+  // Fog
+  world_shader_->set_uniform("fog_start", fog_start_);
+  world_shader_->set_uniform("fog_end", fog_end_);
+  world_shader_->set_uniform("fog_color", fog_color_);
+
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D_ARRAY, block_textures_->id());
 
@@ -445,6 +460,11 @@ void World::draw(const glm::mat4 &view_matrix,
                              sun_diffuse_color);
   water_shader_->set_uniform("directional_light.specular_color",
                              sun_specular_color);
+
+  // Fog
+  world_shader_->set_uniform("fog_start", fog_start_);
+  world_shader_->set_uniform("fog_end", fog_end_);
+  world_shader_->set_uniform("fog_color", fog_color_);
 
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D_ARRAY, block_textures_->id());

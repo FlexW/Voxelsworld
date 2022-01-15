@@ -344,6 +344,15 @@ void Application::init()
 
   // Create player
   player_ = std::make_unique<Player>();
+
+  // Load sky color
+  const auto sky_color_r =
+      config_.config_value_float("World", "sky_color_r", 0.0f);
+  const auto sky_color_g =
+      config_.config_value_float("World", "sky_color_g", 0.0f);
+  const auto sky_color_b =
+      config_.config_value_float("World", "sky_color_b", 0.0f);
+  sky_color_ = glm::vec3{sky_color_r, sky_color_g, sky_color_b};
 }
 
 void Application::main_loop()
@@ -377,7 +386,7 @@ void Application::main_loop()
 
     glViewport(0, 0, window_width_, window_height_);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-    glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
+    glClearColor(sky_color_.r, sky_color_.g, sky_color_.b, 1.0f);
 
     {
       // Draw world

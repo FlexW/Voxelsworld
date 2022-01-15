@@ -64,6 +64,8 @@ private:
 
   GLFWwindow *window_{};
 
+  glm::vec3 sky_color_;
+
   Application()                    = default;
   Application(const Application &) = delete;
   void operator=(const Application &) = delete;
