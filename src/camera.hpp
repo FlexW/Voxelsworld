@@ -53,7 +53,6 @@ private:
   glm::vec3 front_movement_;
   glm::vec3 up_;
   glm::vec3 right_;
-  glm::vec3 right_movement_;
   glm::vec3 world_up_;
 
   float yaw_;

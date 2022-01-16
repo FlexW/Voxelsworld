@@ -13,10 +13,10 @@ Player::Player() : camera_(glm::vec3(0.0f, 30.0f, 0.0f))
   auto       app    = Application::instance();
   const auto config = app->config();
 
-  free_fly_      = config.config_value_bool("Player", "free_fly", free_fly_);
-  player_height_ = config.config_value_float("Player", "height", 1.3f);
-  gravity_          = config.config_value_float("Player", "gravity", 0.008f);
-  const auto speed  = config.config_value_float("Player", "speed", 8.0f);
+  free_fly_        = config.config_value_bool("Player", "free_fly", free_fly_);
+  player_height_   = config.config_value_float("Player", "height", 1.3f);
+  gravity_         = config.config_value_float("Player", "gravity", 0.008f);
+  const auto speed = config.config_value_float("Player", "speed", 8.0f);
 
   const auto start_position_x =
       config.config_value_float("Player", "start_positon_x", 0.0f);
@@ -39,8 +39,8 @@ glm::vec3 Player::position() const { return camera_.position(); }
 
 void Player::update(GLFWwindow *window,
                     World      &world,
-                    DebugDraw  &debug_draw,
-                    float       delta_time)
+                    DebugDraw & /*debug_draw*/,
+                    float delta_time)
 {
   auto position = camera_.position();
   if (!free_fly_)
@@ -85,11 +85,9 @@ void Player::update(GLFWwindow *window,
     }
   }
 
-  const auto is_move_allowed =
-      [this, &position, &world](const glm::vec3 &direction)
+  const auto is_move_allowed = [&position, &world](const glm::vec3 &direction)
   {
-    for (Ray ray(position, camera_.front_movement()); ray.length() < 0.45f;
-         ray.step(0.01f))
+    for (Ray ray(position, direction); ray.length() < 0.45f; ray.step(0.01f))
     {
       const auto point = ray.end();
       if (world.is_block(point))
@@ -164,14 +162,11 @@ void Player::update(GLFWwindow *window,
   // Block picking
   if (do_pick_block_)
   {
-    std::cout << "Start block picking. Position " << camera_.position()
-              << " Front: " << camera_.front() << std::endl;
     do_pick_block_ = false;
     for (Ray ray(camera_.position(), camera_.front()); ray.length() < 4.0f;
          ray.step(0.5f))
     {
       const auto point = ray.end();
-      std::cout << "Ray end: " << point << std::endl;
       if (world.remove_block(point))
       {
         break;
@@ -194,7 +189,7 @@ void Player::update(GLFWwindow *window,
   }
 }
 
-void Player::on_mouse_button(int button, int action, int mods)
+void Player::on_mouse_button(int button, int action, int /*mods*/)
 {
   if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
   {

@@ -26,7 +26,7 @@ glm::mat4 Camera::view_matrix() const
 void Camera::process_movement(const CameraMovement direction,
                               const float          delta_time)
 {
-  const float velocity = movement_speed_ * delta_time;
+  const auto velocity = movement_speed_ * delta_time;
 
   const auto front = free_fly_ ? front_ : front_movement_;
 

@@ -1,8 +1,8 @@
 #include "texture_atlas.hpp"
 #include "defer.hpp"
 
-#include <iostream>
 #include <stb_image.h>
+#include <stdexcept>
 
 GLuint TextureAtlas::texture_id() const
 {
@@ -22,9 +22,7 @@ bool TextureAtlas::load(const std::filesystem::path &file_path,
                                 0);
   if (!texture_data)
   {
-    std::cerr << "Error: Could not load texture " << file_path.string()
-              << std::endl;
-    return false;
+    throw std::runtime_error("Could not load texture " + file_path.string());
   }
   defer(stbi_image_free(texture_data));
 

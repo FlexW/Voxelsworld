@@ -28,20 +28,28 @@ std::optional<glm::vec3> Aabb::intersect(const Ray &ray)
     else
     {
       // Compute intersection t value of ray with near and far plane of slab
-      float ood = 1.0f / d[i];
-      float t1  = (min_extent_[i] - p[i]) * ood;
-      float t2  = (max_extent_[i] - p[i]) * ood;
+      const float ood = 1.0f / d[i];
+      float       t1  = (min_extent_[i] - p[i]) * ood;
+      float       t2  = (max_extent_[i] - p[i]) * ood;
       // Make t1 be intersection with near plane, t2 with far plane
       if (t1 > t2)
+      {
         std::swap(t1, t2);
+      }
       // Compute the intersection of slab intersection intervals
       if (t1 > tmin)
+      {
         tmin = t1;
+      }
       if (t2 > tmax)
+      {
         tmax = t2;
+      }
       // Exit with no collision as soon as slab intersection becomes empty
       if (tmin > tmax)
+      {
         return {};
+      }
     }
   }
   // Ray intersects all 3 slabs. Return point (q) and intersection t value

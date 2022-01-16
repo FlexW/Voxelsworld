@@ -9,16 +9,17 @@
 
   "configurePresets": [
     {
-      "name": "release",
-      "displayName": "Release",
-      "description": "Release config",
+      "name": "clang_release",
+      "displayName": "Clang Release",
+      "description": "Clang Release config",
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/release",
+      "binaryDir": "${sourceDir}/build/clang_release",
       "cacheVariables": {
         "CMAKE_C_COMPILER": { "type": "STRING", "value": "clang" },
         "CMAKE_CXX_COMPILER": { "type": "STRING", "value": "clang++" },
         "CMAKE_EXPORT_COMPILE_COMMANDS": { "type": "BOOL", "value": "ON" },
-        "CMAKE_BUILD_TYPE": { "type": "STRING", "value": "RelWithDebInfo" }
+        "CMAKE_BUILD_TYPE": { "type": "STRING", "value": "RelWithDebInfo" },
+        "WERROR": { "type": "BOOL", "value": "ON" }
       },
       "warnings": {
         "uninitialized": true
@@ -26,19 +27,81 @@
     },
 
     {
-      "name": "debug",
-      "displayName": "Debug",
-      "description": "Debug config",
-      "inherits": "release",
-      "binaryDir": "${sourceDir}/build/debug",
+      "name": "gcc_release",
+      "displayName": "GCC Release",
+      "description": "GCC Release config",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/gcc_release",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": { "type": "STRING", "value": "gcc" },
+        "CMAKE_CXX_COMPILER": { "type": "STRING", "value": "g++" },
+        "CMAKE_EXPORT_COMPILE_COMMANDS": { "type": "BOOL", "value": "ON" },
+        "CMAKE_BUILD_TYPE": { "type": "STRING", "value": "RelWithDebInfo" },
+        "WERROR": { "type": "BOOL", "value": "ON" }
+      },
+      "warnings": {
+        "uninitialized": true
+      }
+    },
+
+    {
+      "name": "clang_debug",
+      "displayName": "Clang Debug",
+      "description": "Clang Debug config",
+      "inherits": "clang_release",
+      "binaryDir": "${sourceDir}/build/clang_debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": { "type": "STRING", "value": "Debug" }
       }
-    }
-  ],
+    },
 
-  "buildPresets": [
-    { "name": "release", "configurePreset": "release" },
-    { "name": "debug", "configurePreset": "debug" }
+    {
+      "name": "gcc_debug",
+      "displayName": "GCC Debug",
+      "description": "GCC Debug config",
+      "inherits": "gcc_release",
+      "binaryDir": "${sourceDir}/build/gcc_debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": { "type": "STRING", "value": "Debug" }
+      }
+    },
+
+    {
+      "name": "clang_asan",
+      "displayName": "Clang Asan",
+      "description": "Clang Asan config",
+      "inherits": "clang_release",
+      "binaryDir": "${sourceDir}/build/clang_asan",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": { "type": "STRING", "value": "Debug" },
+        "CMAKE_CXX_FLAGS": {
+          "type": "STRING",
+          "value": "-g -O1 -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls"
+        },
+        "CMAKE_C_FLAGS": {
+          "type": "STRING",
+          "value": "-g -O1 -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls"
+        }
+      }
+    },
+
+    {
+      "name": "gcc_asan",
+      "displayName": "GCC Asan",
+      "description": "GCC Asan config",
+      "inherits": "gcc_release",
+      "binaryDir": "${sourceDir}/build/gcc_asan",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": { "type": "STRING", "value": "Debug" },
+        "CMAKE_CXX_FLAGS": {
+          "type": "STRING",
+          "value": "-g -O1 -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls"
+        },
+        "CMAKE_C_FLAGS": {
+          "type": "STRING",
+          "value": "-g -O1 -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls"
+        }
+      }
+    }
   ]
 }

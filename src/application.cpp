@@ -1,6 +1,7 @@
-
 #include "application.hpp"
+#include "event.hpp"
 #include "gl/gl_shader.hpp"
+#include "log/log.hpp"
 #include "player.hpp"
 #include "time.hpp"
 
@@ -17,8 +18,8 @@ constexpr auto opengl_version_minor = 6;
 
 void glfw_error_callback(int error_code, const char *description)
 {
-  std::cerr << "GLFW Error [" << error_code << "]: " << description
-            << std::endl;
+  LOG_ERROR() << "GLFW Error code: " << error_code
+              << " Description: " << description;
 }
 
 void APIENTRY gl_debug_callback(GLenum source,
@@ -88,28 +89,28 @@ void APIENTRY gl_debug_callback(GLenum source,
     type_str = "Unknown";
   }
 
-  std::string sev_str;
   switch (severity)
   {
   case GL_DEBUG_SEVERITY_HIGH:
-    sev_str = "HIGH";
+    LOG_ERROR() << source_str << "Type: " << type_str << "Id: " << id
+                << "Message: " << msg;
     break;
   case GL_DEBUG_SEVERITY_MEDIUM:
-    sev_str = "MED";
+    LOG_WARN() << source_str << "Type: " << type_str << "Id: " << id
+               << "Message: " << msg;
     break;
   case GL_DEBUG_SEVERITY_LOW:
-    sev_str = "LOW";
+    LOG_WARN() << source_str << "Type: " << type_str << "Id: " << id
+               << "Message: " << msg;
     break;
   case GL_DEBUG_SEVERITY_NOTIFICATION:
-    sev_str = "NOTIFY";
+    LOG_DEBUG() << source_str << "Type: " << type_str << "Id: " << id
+                << "Message: " << msg;
     break;
   default:
-    sev_str = "UNK";
+    LOG_WARN() << source_str << "Type: " << type_str << "Id: " << id
+               << "Message: " << msg;
   }
-
-  std::cerr << "OpenGL " << source_str << ":" << type_str << "[" << sev_str
-            << "]"
-            << "(" << id << "): " << msg << std::endl;
 }
 
 void window_framebuffer_size_callback(GLFWwindow *window, int width, int height)
@@ -153,10 +154,10 @@ void mouse_movement_callback(GLFWwindow *window, double x, double y)
 
 void gl_dump_info()
 {
-  const GLubyte *renderer     = glGetString(GL_RENDERER);
-  const GLubyte *vendor       = glGetString(GL_VENDOR);
-  const GLubyte *version      = glGetString(GL_VERSION);
-  const GLubyte *glsl_version = glGetString(GL_SHADING_LANGUAGE_VERSION);
+  const auto renderer     = glGetString(GL_RENDERER);
+  const auto vendor       = glGetString(GL_VENDOR);
+  const auto version      = glGetString(GL_VERSION);
+  const auto glsl_version = glGetString(GL_SHADING_LANGUAGE_VERSION);
 
   GLint major, minor, samples, sampleBuffers;
   glGetIntegerv(GL_MAJOR_VERSION, &major);
@@ -167,25 +168,43 @@ void gl_dump_info()
   GLint extensions_count = 0;
   glGetIntegerv(GL_NUM_EXTENSIONS, &extensions_count);
 
-  std::printf(
-      "-------------------------------------------------------------\n");
-  std::printf("GL Vendor    : %s\n", vendor);
-  std::printf("GL Renderer  : %s\n", renderer);
-  std::printf("GL Version   : %s\n", version);
-  std::printf("GL Version   : %d.%d\n", major, minor);
-  std::printf("GLSL Version : %s\n", glsl_version);
-  std::printf("MSAA samples : %d\n", samples);
-  std::printf("MSAA buffers : %d\n", sampleBuffers);
-  std::printf("GL Extensions:\n");
+  LOG_INFO() << "GL Vendor: " << vendor;
+  LOG_INFO() << "GL Renderer: " << renderer;
+  LOG_INFO() << "GL Version: " << version;
+  LOG_INFO() << "GLSL Version: " << glsl_version;
+  LOG_INFO() << "MSAA samples: " << samples;
+  LOG_INFO() << "MSAA buffers: " << sampleBuffers;
+
+  std::string extensions;
   for (GLint i = 0; i < extensions_count; ++i)
   {
     const auto extension = glGetStringi(GL_EXTENSIONS, i);
-    std::printf("\t%s\n", extension);
+    if (i == 0)
+    {
+      extensions += reinterpret_cast<const char *>(extension);
+    }
+    else
+    {
+      extensions +=
+          std::string(", ") + reinterpret_cast<const char *>(extension);
+    }
   }
-  std::printf(
-      "-------------------------------------------------------------\n");
+  LOG_DEBUG() << "GL Extensions: " << extensions;
 }
 } // namespace
+
+EventId WindowResizeEvent::id = 0xd1470b85;
+
+WindowResizeEvent::WindowResizeEvent(int width, int height)
+    : Event(id),
+      width_{width},
+      height_{height}
+{
+}
+
+int WindowResizeEvent::width() const { return width_; }
+
+int WindowResizeEvent::height() const { return height_; }
 
 Application *Application::instance()
 {
@@ -206,7 +225,7 @@ int Application::run()
   }
   catch (const std::runtime_error &error)
   {
-    std::cerr << "Unhandled exception: " << error.what() << std::endl;
+    LOG_ERROR() << "Unhandled exception: " << error.what();
     return EXIT_FAILURE;
   }
   return EXIT_SUCCESS;
@@ -217,6 +236,30 @@ Config Application::config() const { return config_; }
 void Application::init()
 {
   config_.load_config("data/voxelworld.ini");
+
+  // Load debug level
+  const auto debug_level_str =
+      config_.config_value_string("General", "debug_level", "debug");
+  if (debug_level_str == "debug")
+  {
+    Log::set_reporting_level(LogLevel::Debug);
+  }
+  else if (debug_level_str == "info")
+  {
+    Log::set_reporting_level(LogLevel::Info);
+  }
+  else if (debug_level_str == "warn")
+  {
+    Log::set_reporting_level(LogLevel::Warning);
+  }
+  else if (debug_level_str == "error")
+  {
+    Log::set_reporting_level(LogLevel::Error);
+  }
+  else
+  {
+    LOG_WARN() << "Unknown debug level: " << debug_level_str;
+  }
 
   if (!glfwInit())
   {
@@ -279,7 +322,8 @@ void Application::init()
 
   if (!gladLoadGL())
   {
-    std::cerr << "GLAD could not load OpenGL" << std::endl;
+    LOG_ERROR() << "GLAD could not load OpenGL";
+    return;
   }
 
   const auto samples = config_.config_value_int("OpenGL", "samples", 8);
@@ -368,6 +412,9 @@ void Application::main_loop()
 
     glfwPollEvents();
 
+    // Dispatch events
+    event_manager_.dispatch();
+
     // Process movement
     player_->update(window_, *world_, *debug_draw_, delta_time);
 
@@ -414,12 +461,16 @@ void Application::main_loop()
   }
 }
 
-void Application::on_window_framebuffer_size_callback(GLFWwindow *window,
-                                                      int         width,
-                                                      int         height)
+void Application::on_window_framebuffer_size_callback(GLFWwindow * /*window*/,
+                                                      int width,
+                                                      int height)
 {
   window_width_  = width;
   window_height_ = height;
+
+  auto event =
+      std::make_shared<WindowResizeEvent>(window_width_, window_height_);
+  event_manager_.publish(event);
 }
 
 void Application::on_window_close_callback(GLFWwindow *window)
@@ -427,11 +478,11 @@ void Application::on_window_close_callback(GLFWwindow *window)
   glfwSetWindowShouldClose(window, GLFW_TRUE);
 }
 
-void Application::on_key_callback(GLFWwindow *window,
-                                  int         key,
-                                  int         scancode,
-                                  int         action,
-                                  int         mods)
+void Application::on_key_callback(GLFWwindow * /*window*/,
+                                  int key,
+                                  int /*scancode*/,
+                                  int action,
+                                  int /*mods*/)
 {
   // Toggle wireframe
   if (key == GLFW_KEY_F1 && action == GLFW_PRESS)
@@ -462,17 +513,23 @@ void Application::on_key_callback(GLFWwindow *window,
   }
 }
 
-void Application::on_mouse_button_callback(GLFWwindow *window,
-                                           int         button,
-                                           int         action,
-                                           int         mods)
+void Application::on_mouse_button_callback(GLFWwindow * /*window*/,
+                                           int button,
+                                           int action,
+                                           int mods)
 {
   player_->on_mouse_button(button, action, mods);
 }
 
-void Application::on_mouse_movement_callback(GLFWwindow *window,
-                                             double      x,
-                                             double      y)
+void Application::on_mouse_movement_callback(GLFWwindow * /*window*/,
+                                             double x,
+                                             double y)
 {
   player_->on_mouse_movement(x, y);
 }
+
+int Application::window_width() const { return window_width_; }
+
+int Application::window_height() const { return window_height_; }
+
+EventManager *Application::event_manager() { return &event_manager_; }

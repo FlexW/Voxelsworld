@@ -11,6 +11,13 @@ public:
   GLuint id() const;
 
   void set_data(unsigned char *data, int width, int height, int channels_count);
+  void set_storage(GLsizei width,
+                   GLsizei height,
+                   GLint   internal_format,
+                   GLenum  format);
+
+  void bind();
+  void unbind();
 
 private:
   GLuint texture_id_{};

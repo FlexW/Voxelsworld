@@ -7,11 +7,28 @@
 
 #include "config.hpp"
 #include "debug_draw.hpp"
+#include "event.hpp"
+#include "event_manager.hpp"
 #include "gl/gl_shader.hpp"
 #include "player.hpp"
 #include "world.hpp"
 
 #include <memory>
+
+class WindowResizeEvent : public Event
+{
+public:
+  static EventId id;
+
+  WindowResizeEvent(int width, int height);
+
+  int width() const;
+  int height() const;
+
+private:
+  int width_;
+  int height_;
+};
 
 class Application
 {
@@ -40,6 +57,11 @@ public:
 
   void on_mouse_movement_callback(GLFWwindow *window, double x, double y);
 
+  int window_width() const;
+  int window_height() const;
+
+  EventManager *event_manager();
+
 private:
   bool  opengl_debug_;
   bool  is_draw_coordinate_system_;
@@ -56,6 +78,8 @@ private:
   bool is_draw_wireframe_;
 
   Config config_;
+
+  EventManager event_manager_;
 
   std::unique_ptr<World>  world_{};
   std::unique_ptr<Player> player_{};

@@ -1,4 +1,5 @@
 #include "gl_shader.hpp"
+#include "log.hpp"
 
 #include <array>
 #include <cassert>
@@ -40,7 +41,7 @@ void check_for_shader_compile_errors(const std::string &file_name,
     const std::string message =
         " Shader compile error in " + file_name + ":\n" + info_log;
     throw std::runtime_error(message);
-    }
+  }
 }
 
 void check_for_program_link_errors(GLuint program_id)
@@ -76,7 +77,6 @@ GlShader::~GlShader()
 void GlShader::init(const std::filesystem::path &vertex_shader_file_path,
                     const std::filesystem::path &fragment_shader_file_path)
 {
-
   // Compile vertex shader
   const auto vertex_shader_code       = read_text_file(vertex_shader_file_path);
   const auto vertex_shader_id         = glCreateShader(GL_VERTEX_SHADER);
@@ -104,10 +104,10 @@ void GlShader::init(const std::filesystem::path &vertex_shader_file_path,
   glDeleteShader(vertex_shader_id);
   glDeleteShader(fragment_shader_id);
 
-  std::cout << "Compiled vertex shader " << vertex_shader_file_path.string()
-            << std::endl;
-  std::cout << "Compiled fragment shader " << fragment_shader_file_path.string()
-            << std::endl;
+  LOG_INFO() << "Compiled vertex shader " << vertex_shader_file_path.string();
+
+  LOG_INFO() << "Compiled fragment shader "
+             << fragment_shader_file_path.string();
 
   // Query informations
   GLint attribs_count = 0;
@@ -120,7 +120,7 @@ void GlShader::init(const std::filesystem::path &vertex_shader_file_path,
   glGenVertexArrays(1, &vertex_array_id_);
   glBindVertexArray(vertex_array_id_);
 
-  std::cout << "Active attributes: " << attribs_count << std::endl;
+  LOG_DEBUG() << "Active attributes: " << attribs_count;
   std::vector<GLchar> attrib_name_data(max_attrib_name_length);
   for (GLint i = 0; i < attribs_count; ++i)
   {
@@ -135,8 +135,8 @@ void GlShader::init(const std::filesystem::path &vertex_shader_file_path,
                       &type,
                       attrib_name_data.data());
     std::string attrib_name(attrib_name_data.data(), actual_length);
-    std::cout << "Attribute " << i << " " << attrib_name << " type: " << type
-              << " size: " << array_size << std::endl;
+    LOG_DEBUG() << "Attribute " << i << " " << attrib_name << " type: " << type
+                << " size: " << array_size;
     glEnableVertexAttribArray(i);
     switch (type)
     {
@@ -170,7 +170,7 @@ void GlShader::init(const std::filesystem::path &vertex_shader_file_path,
                           GL_UNIFORM,
                           GL_ACTIVE_RESOURCES,
                           &uniforms_count);
-  std::cout << "Active uniforms: " << uniforms_count << std::endl;
+  LOG_DEBUG() << "Active uniforms: " << uniforms_count;
   for (GLint i = 0; i < uniforms_count; ++i)
   {
     std::array<GLenum, 3> properties = {GL_NAME_LENGTH, GL_TYPE, GL_LOCATION};
@@ -192,9 +192,9 @@ void GlShader::init(const std::filesystem::path &vertex_shader_file_path,
                              name_length,
                              nullptr,
                              name.data());
-    const auto type     = results[1];
-    const auto location = results[2];
-    std::cout << "Uniform " << location << " " << name << std::endl;
+    name[name.size() - 1] = '\0';
+    const auto location   = results[2];
+    LOG_DEBUG() << "Uniform " << location << " " << name;
     uniform_locations_[name] = location;
   }
 }
@@ -236,7 +236,7 @@ GLint GlShader::uniform_location(const std::string &name)
     const auto location = glGetUniformLocation(program_id_, name.c_str());
     if (location == -1)
     {
-      std::cerr << "Could not find uniform " << name << std::endl;
+      LOG_WARN() << "Could not find uniform " << name;
     }
     uniform_locations_[name] = location;
     return location;
@@ -288,7 +288,7 @@ void GlShader::bind_vertex_array(
   glBindVertexArray(vertex_array_id_);
 
   GLuint binding_index = 0;
-  for (int i = 0; i < vertex_buffers.size(); ++i)
+  for (std::size_t i = 0; i < vertex_buffers.size(); ++i)
   {
     const auto &vertex_buffer        = vertex_buffers[i];
     const auto &vertex_buffer_layout = vertex_buffer->layout();

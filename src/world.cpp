@@ -5,16 +5,20 @@
 #include "chunk.hpp"
 #include "debug_draw.hpp"
 #include "defer.hpp"
+#include "gl/gl_framebuffer.hpp"
 #include "gl/gl_texture.hpp"
 #include "gl/gl_texture_array.hpp"
 #include "image.hpp"
 
-#include <cstdint>
+#include <FastDelegate.h>
 #include <stb_image.h>
 
 #include <cassert>
+#include <cstdint>
 #include <filesystem>
 #include <memory>
+
+using namespace fastdelegate;
 
 namespace
 {
@@ -111,6 +115,18 @@ World::World()
   const auto fog_color_b =
       config.config_value_float("World", "sky_color_b", 0.0f);
   fog_color_ = glm::vec3{fog_color_r, fog_color_g, fog_color_b};
+
+  app->event_manager()->subscribe(
+      MakeDelegate(this, &World::on_window_resize_event),
+      WindowResizeEvent::id);
+}
+
+World::~World()
+{
+  const auto app = Application::instance();
+  app->event_manager()->unsubscribe(
+      MakeDelegate(this, &World::on_window_resize_event),
+      WindowResizeEvent::id);
 }
 
 void World::init()
@@ -187,6 +203,8 @@ void World::init()
 
   water_shader_ = std::make_unique<GlShader>();
   water_shader_->init("shaders/water.vert", "shaders/water.frag");
+
+  recreate_framebuffer();
 }
 
 int World::block_texture_index(Block::Type block_type,
@@ -208,6 +226,8 @@ int World::block_texture_index(Block::Type block_type,
     case Block::Side::Right:
       return 1;
     }
+    assert(0);
+    return 0;
   }
   case Block::Type::Dirt:
   {
@@ -231,6 +251,8 @@ int World::block_texture_index(Block::Type block_type,
     case Block::Side::Right:
       return 4;
     }
+    assert(0);
+    return 0;
   }
   case Block::Type::OakLeaves:
   {
@@ -359,9 +381,11 @@ bool World::is_chunk(const glm::ivec3 &position) const
   const auto storage_position = chunk_position_to_storage_position(position);
 
   return ((storage_position.y == 0) &&
-          (0 <= storage_position.x && storage_position.x < chunks_.size()) &&
+          (0 <= storage_position.x &&
+           storage_position.x < static_cast<int>(chunks_.size())) &&
           (0 <= storage_position.z &&
-           storage_position.z < chunks_[storage_position.x].size()));
+           storage_position.z <
+               static_cast<int>(chunks_[storage_position.x].size())));
 }
 
 Chunk &World::chunk(const glm::ivec3 &position)
@@ -378,9 +402,8 @@ const Chunk &World::chunk(const glm::ivec3 &position) const
   return chunks_[storage_position.x][storage_position.z];
 }
 
-void World::draw(const glm::mat4 &view_matrix,
-                 const glm::mat4 &projection_matrix,
-                 DebugDraw       &debug_draw)
+void World::draw_blocks(const glm::mat4 &view_matrix,
+                        const glm::mat4 &projection_matrix)
 {
   world_shader_->bind();
   world_shader_->set_uniform("model_matrix", glm::mat4(1.0f));
@@ -388,25 +411,15 @@ void World::draw(const glm::mat4 &view_matrix,
   world_shader_->set_uniform("projection_matrix", projection_matrix);
 
   // Lights
-  const auto      sun_direction = glm::normalize(glm::vec3{-7.0f, -8.8, 0.0f});
-  const glm::vec3 sun_ambient_color{0.6f};
-  const glm::vec3 sun_diffuse_color{1.0f};
-  const glm::vec3 sun_specular_color{0.8f};
-  if (debug_sun_)
-  {
-    debug_draw.draw_line(glm::vec3{0.0f, 50.0f, 0.0f},
-                         glm::vec3{0.0f, 50.0f, 0.0f} + sun_direction * 800.0f,
-                         glm::vec3{1.0f, 1.0f, 0.0f});
-  }
   world_shader_->set_uniform(
       "directional_light.direction",
-      glm::vec3{view_matrix * glm::vec4{sun_direction, 0.0f}});
+      glm::vec3{view_matrix * glm::vec4{sun_direction_, 0.0f}});
   world_shader_->set_uniform("directional_light.ambient_color",
-                             sun_ambient_color);
+                             sun_ambient_color_);
   world_shader_->set_uniform("directional_light.diffuse_color",
-                             sun_diffuse_color);
+                             sun_diffuse_color_);
   world_shader_->set_uniform("directional_light.specular_color",
-                             sun_specular_color);
+                             sun_specular_color_);
 
   // Fog
   world_shader_->set_uniform("fog_start", fog_start_);
@@ -416,13 +429,10 @@ void World::draw(const glm::mat4 &view_matrix,
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D_ARRAY, block_textures_->id());
 
-  const auto current_chunk_position =
-      position_to_chunk_position(player_position_);
-
   // First draw solid blocks
-  for (int x = 0; x < chunks_.size(); ++x)
+  for (std::size_t x = 0; x < chunks_.size(); ++x)
   {
-    for (int z = 0; z < chunks_[x].size(); ++z)
+    for (std::size_t z = 0; z < chunks_[x].size(); ++z)
     {
       // FIXME: This will fail for border chunks
       auto &c = chunks_[x][z];
@@ -444,7 +454,11 @@ void World::draw(const glm::mat4 &view_matrix,
   }
 
   world_shader_->unbind();
+}
 
+void World::draw_water(const glm::mat4 &view_matrix,
+                       const glm::mat4 &projection_matrix)
+{
   water_shader_->bind();
   water_shader_->set_uniform("model_matrix", glm::mat4(1.0f));
   water_shader_->set_uniform("view_matrix", view_matrix);
@@ -453,13 +467,13 @@ void World::draw(const glm::mat4 &view_matrix,
   // Lights
   water_shader_->set_uniform(
       "directional_light.direction",
-      glm::vec3{view_matrix * glm::vec4{sun_direction, 0.0f}});
+      glm::vec3{view_matrix * glm::vec4{sun_direction_, 0.0f}});
   water_shader_->set_uniform("directional_light.ambient_color",
-                             sun_ambient_color);
+                             sun_ambient_color_);
   water_shader_->set_uniform("directional_light.diffuse_color",
-                             sun_diffuse_color);
+                             sun_diffuse_color_);
   water_shader_->set_uniform("directional_light.specular_color",
-                             sun_specular_color);
+                             sun_specular_color_);
 
   // Fog
   world_shader_->set_uniform("fog_start", fog_start_);
@@ -470,9 +484,9 @@ void World::draw(const glm::mat4 &view_matrix,
   glBindTexture(GL_TEXTURE_2D_ARRAY, block_textures_->id());
 
   // Then draw transparent water
-  for (int x = 0; x < chunks_.size(); ++x)
+  for (std::size_t x = 0; x < chunks_.size(); ++x)
   {
-    for (int z = 0; z < chunks_[x].size(); ++z)
+    for (std::size_t z = 0; z < chunks_[x].size(); ++z)
     {
       // FIXME: This will fail for border chunks
       auto &c = chunks_[x][z];
@@ -491,6 +505,35 @@ void World::draw(const glm::mat4 &view_matrix,
 
       c.draw_water(*water_shader_);
     }
+  }
+}
+
+void World::draw(const glm::mat4 &view_matrix,
+                 const glm::mat4 &projection_matrix,
+                 DebugDraw       &debug_draw)
+{
+  glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Draw blocks");
+  draw_blocks(view_matrix, projection_matrix);
+  glPopDebugGroup();
+
+  glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION,
+                   0,
+                   -1,
+                   "Draw blocks background");
+  framebuffer_->bind();
+  draw_blocks(view_matrix, projection_matrix);
+  framebuffer_->unbind();
+  glPopDebugGroup();
+
+  glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Draw water");
+  draw_water(view_matrix, projection_matrix);
+  glPopDebugGroup();
+
+  if (debug_sun_)
+  {
+    debug_draw.draw_line(glm::vec3{0.0f, 50.0f, 0.0f},
+                         glm::vec3{0.0f, 50.0f, 0.0f} + sun_direction_ * 800.0f,
+                         glm::vec3{1.0f, 1.0f, 0.0f});
   }
 }
 
@@ -546,7 +589,6 @@ bool World::remove_block(const glm::vec3 &position)
 
   if (!is_chunk_under_position(block_position))
   {
-    std::cout << "No chunk found under " << position << std::endl;
     return false;
   }
 
@@ -554,9 +596,6 @@ bool World::remove_block(const glm::vec3 &position)
       world_position_to_chunk_position(block_position);
 
   auto &c = chunk(chunk_position);
-
-  std::cout << "Chunk positon: " << c.position() << std::endl;
-  std::cout << "Block pos in chunk: " << block_in_chunk_position << std::endl;
 
   return c.remove_block(*this, block_in_chunk_position);
 }
@@ -580,8 +619,6 @@ bool World::place_block(const Ray &ray)
     return false;
   }
 
-  std::cout << "Test intersection with block" << block_position << std::endl;
-
   Aabb       aabb{block_position,
             glm::vec3{block_position.x + Block::width,
                       block_position.y + Block::height,
@@ -589,12 +626,8 @@ bool World::place_block(const Ray &ray)
   const auto intersection = aabb.intersect(ray);
   if (intersection.has_value())
   {
-    std::cout << "Place block" << std::endl;
-    std::cout << "Intersect: " << intersection.value() << std::endl;
     const auto new_block_world_position =
         player_position_to_world_block_position(intersection.value());
-    std::cout << "New block position: " << new_block_world_position
-              << std::endl;
 
     const auto [_, new_block_chunk_position] =
         world_position_to_chunk_position(new_block_world_position);
@@ -615,4 +648,36 @@ void World::regenerate_chunk(const glm::ivec3 &chunk_position)
   }
   auto &c = chunk(chunk_position);
   c.regenerate_mesh(*this);
+}
+
+void World::on_window_resize_event(std::shared_ptr<Event> /*event*/)
+{
+  recreate_framebuffer();
+}
+
+void World::recreate_framebuffer()
+{
+  framebuffer_             = std::make_unique<GlFramebuffer>();
+  const auto app           = Application::instance();
+  const auto window_width  = app->window_width();
+  const auto window_height = app->window_height();
+
+  FramebufferAttachment color_attachment{};
+  color_attachment.type_            = AttachmentType::Texture;
+  color_attachment.format_          = GL_RGBA;
+  color_attachment.internal_format_ = GL_RGBA8;
+  color_attachment.width_           = window_width;
+  color_attachment.height_          = window_height;
+
+  FramebufferAttachment depth_attachment{};
+  depth_attachment.type_            = AttachmentType::Renderbuffer;
+  depth_attachment.internal_format_ = GL_DEPTH_COMPONENT24;
+  depth_attachment.width_           = window_width;
+  depth_attachment.height_          = window_height;
+
+  FramebufferConfig framebuffer_config{};
+  framebuffer_config.color_attachments_.push_back(color_attachment);
+  framebuffer_config.depth_attachment_ = depth_attachment;
+
+  framebuffer_->attach(framebuffer_config);
 }

@@ -37,7 +37,7 @@ void GlTextureArray::set_data(
   glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-  for (int i = 0; i < sub_textures_data.size(); ++i)
+  for (std::size_t i = 0; i < sub_textures_data.size(); ++i)
   {
     glTexSubImage3D(GL_TEXTURE_2D_ARRAY,
                     0,

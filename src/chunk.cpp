@@ -34,29 +34,29 @@ Chunk::Chunk()
   auto       app    = Application::instance();
   const auto config = app->config();
 
-  c1_           = config.config_value_float("Chunk", "c1", 1.0f);
-  c2_           = config.config_value_float("Chunk", "c2", 0.7f);
-  c3_           = config.config_value_float("Chunk", "c3", 0.008f);
-  div_          = config.config_value_float("Chunk", "div", 1.0f);
-  frequency1_   = config.config_value_float("Chunk", "frequency1", 0.0003f);
-  frequency2_   = config.config_value_float("Chunk", "frequency2", 0.008f);
-  frequency3_   = config.config_value_float("Chunk", "frequency3", 0.1f);
-  e_            = config.config_value_float("Chunk", "e", 11.3);
-  fudge_factor_ = config.config_value_float("Chunk", "fudge_factor", 1.1);
-  water_level_  = config.config_value_float("Chunk", "water_level", 5.0);
-  terraces_          = config.config_value_float("Chunk", "terraces", 180.0);
-  tree_density_      = config.config_value_int("Chunk", "tree_density", 6);
-  min_tree_height_   = config.config_value_int("Chunk", "min_tree_height", 5);
-  max_tree_height_   = config.config_value_int("Chunk", "max_tree_height", 11);
+  c1_              = config.config_value_float("Chunk", "c1", 1.0f);
+  c2_              = config.config_value_float("Chunk", "c2", 0.7f);
+  c3_              = config.config_value_float("Chunk", "c3", 0.008f);
+  div_             = config.config_value_float("Chunk", "div", 1.0f);
+  frequency1_      = config.config_value_float("Chunk", "frequency1", 0.0003f);
+  frequency2_      = config.config_value_float("Chunk", "frequency2", 0.008f);
+  frequency3_      = config.config_value_float("Chunk", "frequency3", 0.1f);
+  e_               = config.config_value_float("Chunk", "e", 11.3);
+  fudge_factor_    = config.config_value_float("Chunk", "fudge_factor", 1.1);
+  water_level_     = config.config_value_float("Chunk", "water_level", 5.0);
+  terraces_        = config.config_value_float("Chunk", "terraces", 180.0);
+  tree_density_    = config.config_value_int("Chunk", "tree_density", 6);
+  min_tree_height_ = config.config_value_int("Chunk", "min_tree_height", 5);
+  max_tree_height_ = config.config_value_int("Chunk", "max_tree_height", 11);
   min_leaves_radius_ = config.config_value_int("Chunk", "min_leaves_radius", 3);
   max_leaves_radius_ = config.config_value_int("Chunk", "max_leaves_radius", 5);
   leave_density_     = config.config_value_int("Chunk", "leaves_density", 2);
 
   blocks_.resize(width());
-  for (int x = 0; x < blocks_.size(); ++x)
+  for (std::size_t x = 0; x < blocks_.size(); ++x)
   {
     blocks_[x].resize(width());
-    for (int z = 0; z < blocks_[x].size(); ++z)
+    for (std::size_t z = 0; z < blocks_[x].size(); ++z)
     {
       blocks_[x][z].resize(height());
     }
@@ -65,7 +65,7 @@ Chunk::Chunk()
 
 [[nodiscard]] bool Chunk::is_generated() const { return is_generated_; }
 
-void Chunk::generate(const glm::vec3 &position, const World &world)
+void Chunk::generate(const glm::vec3 &position, const World & /*world*/)
 {
   if (is_generated_)
   {
@@ -79,10 +79,10 @@ void Chunk::generate(const glm::vec3 &position, const World &world)
   // Generate blue noise
   std::vector<std::vector<float>> blue_noise;
   blue_noise.resize(blocks_.size());
-  for (int x = 0; x < blocks_.size(); ++x)
+  for (std::size_t x = 0; x < blocks_.size(); ++x)
   {
     blue_noise[x].resize(blocks_[x].size());
-    for (int z = 0; z < blocks_.size(); ++z)
+    for (std::size_t z = 0; z < blocks_.size(); ++z)
     {
       const auto world_position =
           block_position_to_world_position(glm::ivec3{x, 0, z});
@@ -95,9 +95,9 @@ void Chunk::generate(const glm::vec3 &position, const World &world)
     }
   }
 
-  for (int x = 0; x < blocks_.size(); ++x)
+  for (std::size_t x = 0; x < blocks_.size(); ++x)
   {
-    for (int z = 0; z < blocks_[x].size(); ++z)
+    for (std::size_t z = 0; z < blocks_[x].size(); ++z)
     {
       const auto world_position =
           block_position_to_world_position(glm::ivec3{x, 0, z});
@@ -108,9 +108,13 @@ void Chunk::generate(const glm::vec3 &position, const World &world)
       // Calculate if a tree needs to be placed
       double max = 0;
       // there are more efficient algorithms than this
-      for (int yn = x - tree_density_; yn <= x + tree_density_; yn++)
+      for (int yn = x - tree_density_;
+           yn <= static_cast<int>(x) + tree_density_;
+           yn++)
       {
-        for (int xn = z - tree_density_; xn <= z + tree_density_; xn++)
+        for (int xn = z - tree_density_;
+             xn <= static_cast<int>(z) + tree_density_;
+             xn++)
         {
           if (0 <= yn && yn < width() && 0 <= xn && xn < width())
           {
@@ -143,7 +147,7 @@ void Chunk::generate(const glm::vec3 &position, const World &world)
       normalized_noise = glm::round(normalized_noise * terraces_) / terraces_;
 
       auto height = static_cast<int>(normalized_noise * Chunk::height());
-      std::mt19937 rng(94);
+      std::mt19937                       rng(94);
       std::uniform_int_distribution<int> tree_height_gen(min_tree_height_,
                                                          max_tree_height_);
       std::uniform_int_distribution<int> leave_radius_gen(min_leaves_radius_,
@@ -169,8 +173,8 @@ void Chunk::generate(const glm::vec3 &position, const World &world)
             {
               // Place tree
               const auto tree_height = tree_height_gen(rng);
-              for (int i = y + 1;
-                   i < y + tree_height && i < blocks_[x][z].size();
+              for (int i = y + 1; i < static_cast<int>(y) + tree_height &&
+                                  i < static_cast<int>(blocks_[x][z].size());
                    ++i)
               {
                 blocks_[x][z][i].set_type(Block::Type::Oak);
@@ -187,9 +191,9 @@ void Chunk::generate(const glm::vec3 &position, const World &world)
                   for (int leave_y = -leave_radius; leave_y < leave_radius + 1;
                        ++leave_y)
                   {
-                    const auto real_leave_x = x + leave_x;
-                    const auto real_leave_y = tree_height + y + leave_y;
-                    const auto real_leave_z = z + leave_z;
+                    const int real_leave_x{static_cast<int>(x + leave_x)};
+                    const int real_leave_y{tree_height + y + leave_y};
+                    const int real_leave_z{static_cast<int>(z + leave_z)};
 
                     if (real_leave_x < 0 || real_leave_x >= Chunk::width() ||
                         real_leave_z < 0 || real_leave_z >= Chunk::width() ||
@@ -276,11 +280,11 @@ void Chunk::generate_mesh_data(const World            &world,
 {
   int current_index_block = 0;
   int current_index_water = 0;
-  for (int x = 0; x < blocks_.size(); ++x)
+  for (std::size_t x = 0; x < blocks_.size(); ++x)
   {
-    for (int z = 0; z < blocks_[x].size(); ++z)
+    for (std::size_t z = 0; z < blocks_[x].size(); ++z)
     {
-      for (int y = 0; y < blocks_[x][z].size(); ++y)
+      for (std::size_t y = 0; y < blocks_[x][z].size(); ++y)
       {
         const auto block_type = blocks_[x][z][y].type();
         const auto block_height =
@@ -695,16 +699,15 @@ bool Chunk::is_valid_block_position(const glm::ivec3 &position) const
   const auto y = position.y;
   const auto z = position.z;
 
-  return ((0 <= x && x < blocks_.size()) && (0 <= z && z < blocks_[x].size()) &&
-          (0 <= y && y < blocks_[x][z].size()));
+  return ((0 <= x && x < static_cast<int>(blocks_.size())) &&
+          (0 <= z && z < static_cast<int>(blocks_[x].size())) &&
+          (0 <= y && y < static_cast<int>(blocks_[x][z].size())));
 }
 
 bool Chunk::remove_block(World &world, const glm::ivec3 &position)
 {
-  std::cout << "Try to remove block: " << position << std::endl;
   if (!is_valid_block_position(position))
   {
-    std::cout << "Not a valid block" << std::endl;
     return false;
   }
 
@@ -712,11 +715,9 @@ bool Chunk::remove_block(World &world, const glm::ivec3 &position)
 
   if (block.type() == Block::Type::Air || block.type() == Block::Type::Water)
   {
-    std::cout << "Can not remove air or water block" << std::endl;
     return false;
   }
 
-  std::cout << "Remove block" << std::endl;
   block.set_type(Block::Type::Air);
   regenerate_mesh(world);
   regenerate_chunks_if_border_block(world, position);
@@ -739,7 +740,7 @@ void Chunk::regenerate_chunks_if_border_block(World            &world,
     world.regenerate_chunk(
         glm::ivec3{position_.x - 1, position_.y, position_.z});
   }
-  else if (position.x == blocks_.size() - 1)
+  else if (position.x == static_cast<int>(blocks_.size() - 1))
   {
     world.regenerate_chunk(
         glm::ivec3{position_.x + 1, position_.y, position_.z});
@@ -750,7 +751,7 @@ void Chunk::regenerate_chunks_if_border_block(World            &world,
     world.regenerate_chunk(
         glm::ivec3{position_.x, position_.y, position_.z - 1});
   }
-  else if (position.z == blocks_[position.x].size() - 1)
+  else if (position.z == static_cast<int>(blocks_[position.x].size() - 1))
   {
     world.regenerate_chunk(
         glm::ivec3{position_.x, position_.y, position_.z + 1});
@@ -761,7 +762,8 @@ void Chunk::regenerate_chunks_if_border_block(World            &world,
     world.regenerate_chunk(
         glm::ivec3{position_.x, position_.y - 1, position_.z});
   }
-  else if (position.y == blocks_[position.x][position.z].size() - 1)
+  else if (position.y ==
+           static_cast<int>(blocks_[position.x][position.z].size() - 1))
   {
     world.regenerate_chunk(
         glm::ivec3{position_.x, position_.y + 1, position_.z});
@@ -788,10 +790,8 @@ bool Chunk::place_block(World            &world,
                         const glm::ivec3 &position,
                         Block::Type       block_type)
 {
-  std::cout << "Try to place block: " << position << std::endl;
   if (!is_valid_block_position(position))
   {
-    std::cout << "Not a valid block" << std::endl;
     return false;
   }
 

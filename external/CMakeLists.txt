@@ -1,6 +1,7 @@
 add_subdirectory(glad)
 add_subdirectory(glm)
 add_subdirectory(stb)
+add_subdirectory(fastdelegate)
 
 set(GLFW_BUILD_EXAMPLES "OFF" CACHE STRING "")
 set(GLFW_BUILD_TESTS "OFF" CACHE STRING "")

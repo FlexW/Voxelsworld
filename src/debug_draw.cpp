@@ -4,8 +4,6 @@
 
 #include <memory>
 
-constexpr auto line_width = 3.0f;
-
 DebugDraw::DebugDraw()
 {
   lines_vertex_buffer_  = std::make_unique<GlVertexBuffer>();
@@ -31,7 +29,7 @@ void DebugDraw::draw_line(const glm::vec3 &from,
 void DebugDraw::draw_line(const std::vector<glm::vec3> &line,
                           const glm::vec3              &color)
 {
-  for (int i = 1; i < line.size(); ++i)
+  for (std::size_t i = 1; i < line.size(); ++i)
   {
     lines_.push_back(line[i - 1]);
     colors_.push_back(color);
