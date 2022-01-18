@@ -34,20 +34,21 @@ Chunk::Chunk()
   auto       app    = Application::instance();
   const auto config = app->config();
 
-  c1_              = config.config_value_float("Chunk", "c1", 1.0f);
-  c2_              = config.config_value_float("Chunk", "c2", 0.7f);
-  c3_              = config.config_value_float("Chunk", "c3", 0.008f);
-  div_             = config.config_value_float("Chunk", "div", 1.0f);
-  frequency1_      = config.config_value_float("Chunk", "frequency1", 0.0003f);
-  frequency2_      = config.config_value_float("Chunk", "frequency2", 0.008f);
-  frequency3_      = config.config_value_float("Chunk", "frequency3", 0.1f);
-  e_               = config.config_value_float("Chunk", "e", 11.3);
-  fudge_factor_    = config.config_value_float("Chunk", "fudge_factor", 1.1);
-  water_level_     = config.config_value_float("Chunk", "water_level", 5.0);
-  terraces_        = config.config_value_float("Chunk", "terraces", 180.0);
-  tree_density_    = config.config_value_int("Chunk", "tree_density", 6);
-  min_tree_height_ = config.config_value_int("Chunk", "min_tree_height", 5);
-  max_tree_height_ = config.config_value_int("Chunk", "max_tree_height", 11);
+  c1_           = config.config_value_float("Chunk", "c1", 1.0f);
+  c2_           = config.config_value_float("Chunk", "c2", 0.7f);
+  c3_           = config.config_value_float("Chunk", "c3", 0.008f);
+  div_          = config.config_value_float("Chunk", "div", 1.0f);
+  frequency1_   = config.config_value_float("Chunk", "frequency1", 0.0003f);
+  frequency2_   = config.config_value_float("Chunk", "frequency2", 0.008f);
+  frequency3_   = config.config_value_float("Chunk", "frequency3", 0.1f);
+  e_            = config.config_value_float("Chunk", "e", 11.3);
+  fudge_factor_ = config.config_value_float("Chunk", "fudge_factor", 1.1);
+  water_level_ =
+      config.config_value_float("Chunk", "water_level", water_level_);
+  terraces_          = config.config_value_float("Chunk", "terraces", 180.0);
+  tree_density_      = config.config_value_int("Chunk", "tree_density", 6);
+  min_tree_height_   = config.config_value_int("Chunk", "min_tree_height", 5);
+  max_tree_height_   = config.config_value_int("Chunk", "max_tree_height", 11);
   min_leaves_radius_ = config.config_value_int("Chunk", "min_leaves_radius", 3);
   max_leaves_radius_ = config.config_value_int("Chunk", "max_leaves_radius", 5);
   leave_density_     = config.config_value_int("Chunk", "leaves_density", 2);
@@ -156,7 +157,7 @@ void Chunk::generate(const glm::vec3 &position, const World & /*world*/)
 
       for (int y = 0; y <= height || y <= water_level_; ++y)
       {
-        assert(0 <= y && y < blocks_[x][z].size());
+        assert(0 <= y && y < static_cast<int>(blocks_[x][z].size()));
         auto &block = blocks_[x][z][y];
         if (y == height)
         {

@@ -53,7 +53,7 @@ private:
   float frequency3_;
   float e_;
   float fudge_factor_;
-  float water_level_;
+  float water_level_ = 5.0f;
   float terraces_;
 
   int min_tree_height_;

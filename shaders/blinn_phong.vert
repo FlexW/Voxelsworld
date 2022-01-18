@@ -18,13 +18,17 @@ uniform mat4 projection_matrix;
 uniform mat4 view_matrix;
 uniform float fog_start = 50.0;
 uniform float fog_end = 400.0;
+uniform vec4 clip_plane = vec4(0.0f, -1.0f, 0.0f, 5.0f);
 
 uniform mat4 model_matrix;
 
 void main()
 {
+
   vec4 position = vec4(in_position, 1.0);
   vec3 normal = in_normal;
+
+  gl_ClipDistance[0] = dot(position, clip_plane);
 
   mat4 view_model_matrix = view_matrix * model_matrix;
 

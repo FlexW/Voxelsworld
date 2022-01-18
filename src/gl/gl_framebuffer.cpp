@@ -31,7 +31,7 @@ void GlFramebuffer::attach(const FramebufferConfig &config)
     {
     case AttachmentType::Texture:
     {
-      auto texture = std::make_unique<GlTexture>();
+      auto texture = std::make_shared<GlTexture>();
       texture->set_storage(color_attachment.width_,
                            color_attachment.height_,
                            color_attachment.internal_format_,
@@ -46,7 +46,7 @@ void GlFramebuffer::attach(const FramebufferConfig &config)
     }
     case AttachmentType::Renderbuffer:
     {
-      auto renderbuffer = std::make_unique<GlRenderbuffer>();
+      auto renderbuffer = std::make_shared<GlRenderbuffer>();
 
       renderbuffer->set_storage(color_attachment.internal_format_,
                                 color_attachment.width_,
@@ -75,7 +75,7 @@ void GlFramebuffer::attach(const FramebufferConfig &config)
     }
     case AttachmentType::Renderbuffer:
     {
-      auto renderbuffer = std::make_unique<GlRenderbuffer>();
+      auto renderbuffer = std::make_shared<GlRenderbuffer>();
 
       renderbuffer->set_storage(depth_attachment.internal_format_,
                                 depth_attachment.width_,
@@ -103,7 +103,7 @@ void GlFramebuffer::attach(const FramebufferConfig &config)
     }
     case AttachmentType::Renderbuffer:
     {
-      auto renderbuffer = std::make_unique<GlRenderbuffer>();
+      auto renderbuffer = std::make_shared<GlRenderbuffer>();
 
       renderbuffer->set_storage(stencil_attachment.internal_format_,
                                 stencil_attachment.width_,
@@ -163,4 +163,21 @@ void GlFramebuffer::attach(const FramebufferConfig &config)
   };
 
   unbind();
+}
+
+Attachment GlFramebuffer::color_attachment(std::size_t index) const
+{
+  if (index >= color_attachments_.size())
+  {
+    return {};
+  }
+
+  return color_attachments_[index];
+}
+
+Attachment GlFramebuffer::depth_attachment() const { return depth_attachment_; }
+
+Attachment GlFramebuffer::stencil_attachment() const
+{
+  return stencil_attachment_;
 }

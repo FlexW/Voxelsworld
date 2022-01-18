@@ -220,6 +220,7 @@ void GlShader::draw(const std::vector<const GlVertexBuffer *> &vertex_buffers,
                     GLenum                                     mode)
 {
   assert(vertex_buffers.size() > 0);
+
   bind_vertex_array(vertex_buffers);
 
   glDrawArrays(mode, 0, vertex_buffers[0]->count());
@@ -274,6 +275,19 @@ void GlShader::set_uniform(const std::string &name, const glm::vec3 &value)
 
   GET_UNIFORM_OR_RETURN(name, location)
   glUniform3fv(location, 1, glm::value_ptr(value));
+}
+
+void GlShader::set_uniform(const std::string &name, const glm::vec4 &value)
+{
+
+  GET_UNIFORM_OR_RETURN(name, location)
+  glUniform4fv(location, 1, glm::value_ptr(value));
+}
+
+void GlShader::set_uniform(const std::string &name, const glm::mat2 &value)
+{
+  GET_UNIFORM_OR_RETURN(name, location)
+  glUniformMatrix2fv(location, 1, GL_FALSE, glm::value_ptr(value));
 }
 
 void GlShader::set_uniform(const std::string &name, const glm::mat4 &value)

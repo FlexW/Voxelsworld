@@ -10,6 +10,7 @@
 #include "event.hpp"
 #include "event_manager.hpp"
 #include "gl/gl_shader.hpp"
+#include "gui.hpp"
 #include "player.hpp"
 #include "world.hpp"
 
@@ -62,6 +63,8 @@ public:
 
   EventManager *event_manager();
 
+  Gui *gui();
+
 private:
   bool  opengl_debug_;
   bool  is_draw_coordinate_system_;
@@ -89,6 +92,8 @@ private:
   GLFWwindow *window_{};
 
   glm::vec3 sky_color_;
+
+  std::unique_ptr<Gui> gui_;
 
   Application()                    = default;
   Application(const Application &) = delete;

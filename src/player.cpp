@@ -236,3 +236,5 @@ void Player::jump()
   }
   is_jumping_ = true;
 }
+
+Camera Player::camera() const { return camera_; }

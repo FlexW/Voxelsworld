@@ -31,6 +31,10 @@ struct FramebufferConfig
   std::optional<FramebufferAttachment> stencil_attachment_;
 };
 
+using TextureAttachment      = std::shared_ptr<GlTexture>;
+using RenderbufferAttachment = std::shared_ptr<GlRenderbuffer>;
+using Attachment = std::variant<TextureAttachment, RenderbufferAttachment>;
+
 class GlFramebuffer
 {
 public:
@@ -42,12 +46,12 @@ public:
 
   void attach(const FramebufferConfig &config);
 
+  Attachment color_attachment(std::size_t index) const;
+  Attachment depth_attachment() const;
+  Attachment stencil_attachment() const;
+
 private:
   GLuint id_{};
-
-  using TextureAttachment      = std::unique_ptr<GlTexture>;
-  using RenderbufferAttachment = std::unique_ptr<GlRenderbuffer>;
-  using Attachment = std::variant<TextureAttachment, RenderbufferAttachment>;
 
   std::vector<Attachment> color_attachments_;
   Attachment              depth_attachment_;

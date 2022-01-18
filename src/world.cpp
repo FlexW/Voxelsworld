@@ -2,12 +2,14 @@
 #include "aabb.hpp"
 #include "application.hpp"
 #include "block.hpp"
+#include "camera.hpp"
 #include "chunk.hpp"
 #include "debug_draw.hpp"
 #include "defer.hpp"
 #include "gl/gl_framebuffer.hpp"
 #include "gl/gl_texture.hpp"
 #include "gl/gl_texture_array.hpp"
+#include "gui_texture.hpp"
 #include "image.hpp"
 
 #include <FastDelegate.h>
@@ -116,6 +118,9 @@ World::World()
       config.config_value_float("World", "sky_color_b", 0.0f);
   fog_color_ = glm::vec3{fog_color_r, fog_color_g, fog_color_b};
 
+  water_level_ =
+      config.config_value_float("Chunk", "water_level", water_level_);
+
   app->event_manager()->subscribe(
       MakeDelegate(this, &World::on_window_resize_event),
       WindowResizeEvent::id);
@@ -203,6 +208,14 @@ void World::init()
 
   water_shader_ = std::make_unique<GlShader>();
   water_shader_->init("shaders/water.vert", "shaders/water.frag");
+
+  reflection_gui_texture_ = std::make_shared<GuiTexture>();
+  refraction_gui_texture_ = std::make_shared<GuiTexture>();
+  refraction_gui_texture_->set_position(glm::vec2{400.0f, 0.0f});
+
+  const auto gui = Application::instance()->gui();
+  gui->add_gui_element(reflection_gui_texture_);
+  gui->add_gui_element(refraction_gui_texture_);
 
   recreate_framebuffer();
 }
@@ -403,12 +416,14 @@ const Chunk &World::chunk(const glm::ivec3 &position) const
 }
 
 void World::draw_blocks(const glm::mat4 &view_matrix,
-                        const glm::mat4 &projection_matrix)
+                        const glm::mat4 &projection_matrix,
+                        const glm::vec4 &clip_plane)
 {
   world_shader_->bind();
   world_shader_->set_uniform("model_matrix", glm::mat4(1.0f));
   world_shader_->set_uniform("view_matrix", view_matrix);
   world_shader_->set_uniform("projection_matrix", projection_matrix);
+  world_shader_->set_uniform("clip_plane", clip_plane);
 
   // Lights
   world_shader_->set_uniform(
@@ -476,9 +491,9 @@ void World::draw_water(const glm::mat4 &view_matrix,
                              sun_specular_color_);
 
   // Fog
-  world_shader_->set_uniform("fog_start", fog_start_);
-  world_shader_->set_uniform("fog_end", fog_end_);
-  world_shader_->set_uniform("fog_color", fog_color_);
+  water_shader_->set_uniform("fog_start", fog_start_);
+  water_shader_->set_uniform("fog_end", fog_end_);
+  water_shader_->set_uniform("fog_color", fog_color_);
 
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D_ARRAY, block_textures_->id());
@@ -508,25 +523,50 @@ void World::draw_water(const glm::mat4 &view_matrix,
   }
 }
 
-void World::draw(const glm::mat4 &view_matrix,
+void World::draw(const Camera    &camera,
                  const glm::mat4 &projection_matrix,
                  DebugDraw       &debug_draw)
 {
-  glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Draw blocks");
-  draw_blocks(view_matrix, projection_matrix);
+  glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Solid Pass");
+  draw_blocks(camera.view_matrix(), projection_matrix);
   glPopDebugGroup();
 
-  glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION,
-                   0,
-                   -1,
-                   "Draw blocks background");
-  framebuffer_->bind();
-  draw_blocks(view_matrix, projection_matrix);
-  framebuffer_->unbind();
+  glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Reflection Pass");
+  {
+    Camera     reflection_camera{camera};
+    const auto distance =
+        2.0f * (reflection_camera.position().y - water_level_);
+    reflection_camera.set_position(
+        glm::vec3{reflection_camera.position().x,
+                  reflection_camera.position().y - distance,
+                  reflection_camera.position().z});
+    reflection_camera.set_pitch(-reflection_camera.pitch());
+    reflection_framebuffer_->bind();
+    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+    glClearColor(fog_color_.r, fog_color_.g, fog_color_.b, 1.0f);
+    const auto app = Application::instance();
+    glViewport(0, 0, app->window_width(), app->window_height());
+    draw_blocks(reflection_camera.view_matrix(),
+                projection_matrix,
+                glm::vec4{0.0f, 1.0f, 0.0f, -water_level_});
+    reflection_framebuffer_->unbind();
+  }
   glPopDebugGroup();
 
-  glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Draw water");
-  draw_water(view_matrix, projection_matrix);
+  glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Refraction Pass");
+  refraction_framebuffer_->bind();
+  glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+  glClearColor(fog_color_.r, fog_color_.g, fog_color_.b, 1.0f);
+  const auto app = Application::instance();
+  glViewport(0, 0, app->window_width(), app->window_height());
+  draw_blocks(camera.view_matrix(),
+              projection_matrix,
+              glm::vec4{0.0f, -1.0f, 0.0f, water_level_});
+  refraction_framebuffer_->unbind();
+  glPopDebugGroup();
+
+  glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Water Pass");
+  draw_water(camera.view_matrix(), projection_matrix);
   glPopDebugGroup();
 
   if (debug_sun_)
@@ -657,27 +697,65 @@ void World::on_window_resize_event(std::shared_ptr<Event> /*event*/)
 
 void World::recreate_framebuffer()
 {
-  framebuffer_             = std::make_unique<GlFramebuffer>();
-  const auto app           = Application::instance();
-  const auto window_width  = app->window_width();
-  const auto window_height = app->window_height();
+  // Create the reflection framebuffer
+  {
+    reflection_framebuffer_  = std::make_unique<GlFramebuffer>();
+    const auto app           = Application::instance();
+    const auto window_width  = app->window_width();
+    const auto window_height = app->window_height();
 
-  FramebufferAttachment color_attachment{};
-  color_attachment.type_            = AttachmentType::Texture;
-  color_attachment.format_          = GL_RGBA;
-  color_attachment.internal_format_ = GL_RGBA8;
-  color_attachment.width_           = window_width;
-  color_attachment.height_          = window_height;
+    FramebufferAttachment color_attachment{};
+    color_attachment.type_            = AttachmentType::Texture;
+    color_attachment.format_          = GL_RGBA;
+    color_attachment.internal_format_ = GL_RGBA8;
+    color_attachment.width_           = window_width;
+    color_attachment.height_          = window_height;
 
-  FramebufferAttachment depth_attachment{};
-  depth_attachment.type_            = AttachmentType::Renderbuffer;
-  depth_attachment.internal_format_ = GL_DEPTH_COMPONENT24;
-  depth_attachment.width_           = window_width;
-  depth_attachment.height_          = window_height;
+    FramebufferAttachment depth_attachment{};
+    depth_attachment.type_            = AttachmentType::Renderbuffer;
+    depth_attachment.internal_format_ = GL_DEPTH_COMPONENT24;
+    depth_attachment.width_           = window_width;
+    depth_attachment.height_          = window_height;
 
-  FramebufferConfig framebuffer_config{};
-  framebuffer_config.color_attachments_.push_back(color_attachment);
-  framebuffer_config.depth_attachment_ = depth_attachment;
+    FramebufferConfig framebuffer_config{};
+    framebuffer_config.color_attachments_.push_back(color_attachment);
+    framebuffer_config.depth_attachment_ = depth_attachment;
 
-  framebuffer_->attach(framebuffer_config);
+    reflection_framebuffer_->attach(framebuffer_config);
+  }
+
+  // Create the refraction framebuffer
+  {
+    refraction_framebuffer_  = std::make_unique<GlFramebuffer>();
+    const auto app           = Application::instance();
+    const auto window_width  = app->window_width();
+    const auto window_height = app->window_height();
+
+    FramebufferAttachment color_attachment{};
+    color_attachment.type_            = AttachmentType::Texture;
+    color_attachment.format_          = GL_RGBA;
+    color_attachment.internal_format_ = GL_RGBA8;
+    color_attachment.width_           = window_width;
+    color_attachment.height_          = window_height;
+
+    FramebufferAttachment depth_attachment{};
+    depth_attachment.type_            = AttachmentType::Renderbuffer;
+    depth_attachment.internal_format_ = GL_DEPTH_COMPONENT24;
+    depth_attachment.width_           = window_width;
+    depth_attachment.height_          = window_height;
+
+    FramebufferConfig framebuffer_config{};
+    framebuffer_config.color_attachments_.push_back(color_attachment);
+    framebuffer_config.depth_attachment_ = depth_attachment;
+
+    refraction_framebuffer_->attach(framebuffer_config);
+  }
+
+  auto reflection_texture = std::get<std::shared_ptr<GlTexture>>(
+      reflection_framebuffer_->color_attachment(0));
+  reflection_gui_texture_->set_texture(reflection_texture);
+
+  auto refraction_texture = std::get<std::shared_ptr<GlTexture>>(
+      refraction_framebuffer_->color_attachment(0));
+  refraction_gui_texture_->set_texture(refraction_texture);
 }

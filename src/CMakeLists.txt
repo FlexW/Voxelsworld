@@ -22,6 +22,8 @@ target_sources(app PRIVATE
   image.cpp
   event.cpp
   event_manager.cpp
+  gui.cpp
+  gui_texture.cpp
   )
 
 target_include_directories(app PRIVATE .)

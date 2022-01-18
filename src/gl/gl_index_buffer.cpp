@@ -12,7 +12,7 @@ GlIndexBuffer::~GlIndexBuffer()
 
 GLuint GlIndexBuffer::id() const { return index_buffer_id_; }
 
-void GlIndexBuffer::set_data(const std::vector<unsigned> indices)
+void GlIndexBuffer::set_data(const std::vector<unsigned> &indices)
 {
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer_id_);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer_id_);

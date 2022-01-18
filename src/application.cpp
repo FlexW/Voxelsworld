@@ -92,24 +92,24 @@ void APIENTRY gl_debug_callback(GLenum source,
   switch (severity)
   {
   case GL_DEBUG_SEVERITY_HIGH:
-    LOG_ERROR() << source_str << "Type: " << type_str << "Id: " << id
-                << "Message: " << msg;
+    LOG_ERROR() << source_str << " Type: " << type_str << " Id: " << id
+                << " Message: " << msg;
     break;
   case GL_DEBUG_SEVERITY_MEDIUM:
-    LOG_WARN() << source_str << "Type: " << type_str << "Id: " << id
-               << "Message: " << msg;
+    LOG_WARN() << source_str << " Type: " << type_str << " Id: " << id
+               << " Message: " << msg;
     break;
   case GL_DEBUG_SEVERITY_LOW:
-    LOG_WARN() << source_str << "Type: " << type_str << "Id: " << id
-               << "Message: " << msg;
+    LOG_WARN() << source_str << " Type: " << type_str << " Id: " << id
+               << " Message: " << msg;
     break;
   case GL_DEBUG_SEVERITY_NOTIFICATION:
-    LOG_DEBUG() << source_str << "Type: " << type_str << "Id: " << id
-                << "Message: " << msg;
+    LOG_DEBUG() << source_str << " Type: " << type_str << " Id: " << id
+                << " Message: " << msg;
     break;
   default:
-    LOG_WARN() << source_str << "Type: " << type_str << "Id: " << id
-               << "Message: " << msg;
+    LOG_WARN() << source_str << " Type: " << type_str << " Id: " << id
+               << " Message: " << msg;
   }
 }
 
@@ -361,6 +361,7 @@ void Application::init()
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glEnable(GL_CLIP_DISTANCE0);
 
   is_draw_wireframe_ = config_.config_value_bool("OpenGL", "wireframe", false);
   if (is_draw_wireframe_)
@@ -381,6 +382,9 @@ void Application::init()
   camera_far_  = config_.config_value_float("Window", "camera_far", 800.0);
 
   debug_draw_ = std::make_unique<DebugDraw>();
+
+  // Setup gui
+  gui_ = std::make_unique<Gui>();
 
   // Create world
   world_ = std::make_unique<World>();
@@ -437,7 +441,12 @@ void Application::main_loop()
 
     {
       // Draw world
-      world_->draw(player_->view_matrix(), projection_matrix, *debug_draw_);
+      world_->draw(player_->camera(), projection_matrix, *debug_draw_);
+
+      // Draw gui
+      glDisable(GL_CULL_FACE);
+      gui_->draw();
+      glEnable(GL_CULL_FACE);
 
       // Draw coordinate system
       if (is_draw_coordinate_system_)
@@ -533,3 +542,5 @@ int Application::window_width() const { return window_width_; }
 int Application::window_height() const { return window_height_; }
 
 EventManager *Application::event_manager() { return &event_manager_; }
+
+Gui *Application::gui() { return gui_.get(); }

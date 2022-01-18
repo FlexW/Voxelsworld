@@ -10,7 +10,7 @@ public:
   GlIndexBuffer();
   ~GlIndexBuffer();
 
-  void set_data(const std::vector<unsigned> indices);
+  void set_data(const std::vector<unsigned> &indices);
 
   GLuint id() const;
 

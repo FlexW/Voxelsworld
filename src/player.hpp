@@ -19,6 +19,8 @@ public:
   float     zoom() const;
   glm::vec3 position() const;
 
+  Camera camera() const;
+
   void update(GLFWwindow *window,
               World      &world,
               DebugDraw  &debug_draw,
@@ -40,13 +42,13 @@ private:
   Camera camera_;
   bool   free_fly_ = false;
 
-  bool  is_jumping_ = false;
+  bool  is_jumping_      = false;
   bool  is_falling_      = false;
   float jump_height_     = 0.0f;
   float max_jump_height_ = 2.0f;
 
-  bool                   do_pick_block_  = false;
-  bool                   do_place_block_ = false;
+  bool do_pick_block_  = false;
+  bool do_place_block_ = false;
 
   void jump();
 };

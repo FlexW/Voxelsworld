@@ -3,18 +3,7 @@
 #include <cassert>
 #include <stdexcept>
 
-GlTexture::GlTexture()
-{
-  glGenTextures(1, &texture_id_);
-  glBindTexture(GL_TEXTURE_2D, texture_id_);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D,
-                  GL_TEXTURE_MIN_FILTER,
-                  GL_NEAREST_MIPMAP_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glBindTexture(GL_TEXTURE_2D, 0);
-}
+GlTexture::GlTexture() { glGenTextures(1, &texture_id_); }
 
 GlTexture::~GlTexture() { glDeleteTextures(1, &texture_id_); }
 
@@ -58,6 +47,13 @@ void GlTexture::set_data(unsigned char *data,
                GL_UNSIGNED_BYTE,
                data);
 
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D,
+                  GL_TEXTURE_MIN_FILTER,
+                  GL_NEAREST_MIPMAP_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
   glGenerateMipmap(GL_TEXTURE_2D);
 
   unbind();
@@ -83,6 +79,11 @@ void GlTexture::set_storage(GLsizei width,
                format,
                GL_UNSIGNED_BYTE,
                nullptr);
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
   unbind();
 }

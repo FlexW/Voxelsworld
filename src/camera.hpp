@@ -45,6 +45,9 @@ public:
   glm::vec3 front_movement() const;
   glm::vec3 front() const;
 
+  float pitch() const;
+  void  set_pitch(float value);
+
   void set_movement_speed(float value);
 
 private:

@@ -39,7 +39,7 @@ public:
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     vertex_count_ = data.size();
-    layout_ = layout;
+    layout_       = layout;
   }
 
   GlVertexBufferLayout layout() const;

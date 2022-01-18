@@ -42,6 +42,11 @@ void DebugDraw::draw_line(const std::vector<glm::vec3> &line,
 void DebugDraw::submit(const glm::mat4 &view_matrix,
                        const glm::mat4 &projection_matrix)
 {
+  if (lines_.size() == 0)
+  {
+    return;
+  }
+
   GlVertexBufferLayout layout_vec3;
   layout_vec3.push_float(3);
 
