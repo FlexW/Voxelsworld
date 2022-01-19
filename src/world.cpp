@@ -495,8 +495,20 @@ void World::draw_water(const glm::mat4 &view_matrix,
   water_shader_->set_uniform("fog_end", fog_end_);
   water_shader_->set_uniform("fog_color", fog_color_);
 
+  // glActiveTexture(GL_TEXTURE0);
+  // glBindTexture(GL_TEXTURE_2D_ARRAY, block_textures_->id());
+
+  auto reflection_texture = std::get<std::shared_ptr<GlTexture>>(
+      reflection_framebuffer_->color_attachment(0));
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D_ARRAY, block_textures_->id());
+  glBindTexture(GL_TEXTURE_2D, reflection_texture->id());
+  water_shader_->set_uniform("reflection_tex", 0);
+
+  auto refraction_texture = std::get<std::shared_ptr<GlTexture>>(
+      refraction_framebuffer_->color_attachment(0));
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, refraction_texture->id());
+  water_shader_->set_uniform("refraction_tex", 1);
 
   // Then draw transparent water
   for (std::size_t x = 0; x < chunks_.size(); ++x)
@@ -535,7 +547,7 @@ void World::draw(const Camera    &camera,
   {
     Camera     reflection_camera{camera};
     const auto distance =
-        2.0f * (reflection_camera.position().y - water_level_);
+        2.0f * glm::abs(reflection_camera.position().y - (water_level_ + 0.9f));
     reflection_camera.set_position(
         glm::vec3{reflection_camera.position().x,
                   reflection_camera.position().y - distance,
@@ -548,7 +560,7 @@ void World::draw(const Camera    &camera,
     glViewport(0, 0, app->window_width(), app->window_height());
     draw_blocks(reflection_camera.view_matrix(),
                 projection_matrix,
-                glm::vec4{0.0f, 1.0f, 0.0f, -water_level_});
+                glm::vec4{0.0f, 1.0f, 0.0f, -(water_level_ + 0.9f)});
     reflection_framebuffer_->unbind();
   }
   glPopDebugGroup();
@@ -561,7 +573,7 @@ void World::draw(const Camera    &camera,
   glViewport(0, 0, app->window_width(), app->window_height());
   draw_blocks(camera.view_matrix(),
               projection_matrix,
-              glm::vec4{0.0f, -1.0f, 0.0f, water_level_});
+              glm::vec4{0.0f, -1.0f, 0.0f, water_level_ + 0.9f});
   refraction_framebuffer_->unbind();
   glPopDebugGroup();
 

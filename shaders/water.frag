@@ -4,9 +4,8 @@ in VS_OUT
 {
   vec3 position;
   vec3 normal;
-  vec2 tex_coord;
   float fog_factor;
-  flat int tex_index;
+  vec4 clip_space;
 }
 fs_in;
 
@@ -23,11 +22,12 @@ struct DirectionalLight
 
 uniform vec3 fog_color = vec3(0.53f, 0.81f, 0.92f);
 
-uniform sampler2DArray in_diffuse_tex;
-
 uniform float specular_power = 200.0f;
 
 uniform DirectionalLight directional_light;
+
+uniform sampler2D reflection_tex;
+uniform sampler2D refraction_tex;
 
 vec3 blinn_phong_directional_light(vec3 ambient_color,
                                    vec3 diffuse_color,
@@ -52,14 +52,16 @@ vec3 blinn_phong_directional_light(vec3 ambient_color,
   return ambient + diffuse + specular;
 }
 
-vec3 calc_diffuse_color()
-{
-    return texture(in_diffuse_tex, vec3(fs_in.tex_coord, float(fs_in.tex_index))).xyz;
-}
-
 void main()
 {
-  vec3 diffuse_color  = calc_diffuse_color();
+    vec2 ndc = ((fs_in.clip_space.xy / fs_in.clip_space.w) / 2.0) + 0.5;
+    vec2 reflection_tex_coords = vec2(ndc.x, -ndc.y);
+    vec2 refraction_tex_coords = ndc;
+
+  vec4 reflection_color = texture(reflection_tex, reflection_tex_coords);
+  vec4 refraction_color = texture(refraction_tex, refraction_tex_coords);
+
+  vec3 diffuse_color  =  mix(reflection_color, refraction_color, 0.5).rgb;
   vec3 ambient_color  = diffuse_color;
   vec3 specular_color = diffuse_color;
 
@@ -70,5 +72,5 @@ void main()
   // Add fog
   color = fs_in.fog_factor * color + (1.0 - fs_in.fog_factor) * fog_color;
 
-  out_color = vec4(color, 0.8);
+  out_color = vec4(color, 1.0);
 }

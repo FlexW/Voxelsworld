@@ -9,9 +9,8 @@ out VS_OUT
 {
   vec3 position;
   vec3 normal;
-  vec2 tex_coord;
   float fog_factor;
-  flat int tex_index;
+  vec4 clip_space;
 } vs_out;
 
 uniform mat4 projection_matrix;
@@ -33,11 +32,10 @@ void main()
 
   vs_out.position = P.xyz;
   vs_out.normal = N;
-  vs_out.tex_coord = in_tex_coord;
 
-  vs_out.tex_index = in_tex_index;
 
-  gl_Position = projection_matrix * P;
+  vs_out.clip_space = projection_matrix * P;
+  gl_Position = vs_out.clip_space;
 
   // Calculate linear fog
   vs_out.fog_factor = clamp((fog_end - abs(P.z)) / (fog_end - fog_start), 0.0, 1.0);
