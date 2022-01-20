@@ -4,7 +4,12 @@ target_compile_features(gl PUBLIC cxx_std_17)
 
 target_include_directories(gl PUBLIC .)
 
-target_link_libraries(gl PUBLIC glad glm log)
+target_link_libraries(gl PUBLIC 
+    glad 
+    glm 
+    log 
+    util
+    )
 
 target_sources(gl PRIVATE
   gl_shader.cpp

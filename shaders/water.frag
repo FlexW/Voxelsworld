@@ -4,6 +4,7 @@ in VS_OUT
 {
   vec3 position;
   vec3 normal;
+  vec2 tex_coords;
   float fog_factor;
   vec4 clip_space;
 }
@@ -26,8 +27,12 @@ uniform float specular_power = 200.0f;
 
 uniform DirectionalLight directional_light;
 
+uniform float move_factor;
 uniform sampler2D reflection_tex;
 uniform sampler2D refraction_tex;
+uniform sampler2D dudv_tex;
+
+const float wave_strength = 0.005;
 
 vec3 blinn_phong_directional_light(vec3 ambient_color,
                                    vec3 diffuse_color,
@@ -58,19 +63,42 @@ void main()
     vec2 reflection_tex_coords = vec2(ndc.x, -ndc.y);
     vec2 refraction_tex_coords = ndc;
 
-  vec4 reflection_color = texture(reflection_tex, reflection_tex_coords);
-  vec4 refraction_color = texture(refraction_tex, refraction_tex_coords);
+    vec2 distortion1 = (texture(dudv_tex, 
+                               vec2(fs_in.tex_coords.x + move_factor, 
+                               fs_in.tex_coords.y)).rg * 2.0 - 1.0) * wave_strength;
+    vec2 distortion2 = (texture(dudv_tex, 
+                               vec2(-fs_in.tex_coords.x + move_factor, 
+                               fs_in.tex_coords.y + move_factor)).rg * 2.0 - 1.0) * wave_strength;
+    vec2 total_distortion = distortion1 + distortion2;
 
-  vec3 diffuse_color  =  mix(reflection_color, refraction_color, 0.5).rgb;
-  vec3 ambient_color  = diffuse_color;
-  vec3 specular_color = diffuse_color;
+    reflection_tex_coords += total_distortion;
+    reflection_tex_coords.x = clamp(reflection_tex_coords.x, 0.001, 0.999);
+    reflection_tex_coords.y = -clamp(abs(reflection_tex_coords.y), 0.001, 0.999);
 
-  vec3 color = vec3(0.0f);
-  color += blinn_phong_directional_light(ambient_color,
+    refraction_tex_coords += total_distortion;
+    refraction_tex_coords = clamp(refraction_tex_coords, 0.001, 0.999);
+
+    vec4 reflection_color = texture(reflection_tex, reflection_tex_coords);
+    vec4 refraction_color = texture(refraction_tex, refraction_tex_coords);
+
+    float refractive_factor = abs(dot(fs_in.normal, vec3(0.0, 1.0, 0.0)) - 1.0);
+    refractive_factor = pow(refractive_factor, 0.7);
+
+    vec3 diffuse_color  =  mix(reflection_color,
+                               refraction_color, 
+                               refractive_factor).rgb;
+    vec3 ambient_color  = diffuse_color;
+    vec3 specular_color = diffuse_color;
+
+    vec3 color = vec3(0.0f);
+    color += blinn_phong_directional_light(ambient_color,
                                          diffuse_color,
                                          specular_color);
-  // Add fog
-  color = fs_in.fog_factor * color + (1.0 - fs_in.fog_factor) * fog_color;
+    // Add blue for the water
+    color = mix(color, vec3(0.0, 0.3, 0.5), 0.2);
+ 
+    // Add fog
+    color = fs_in.fog_factor * color + (1.0 - fs_in.fog_factor) * fog_color;
 
-  out_color = vec4(color, 1.0);
+    out_color = vec4(color, 1.0);
 }

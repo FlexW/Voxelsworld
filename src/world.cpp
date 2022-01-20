@@ -120,6 +120,8 @@ World::World()
 
   water_level_ =
       config.config_value_float("Chunk", "water_level", water_level_);
+  water_speed_ =
+      config.config_value_float("Chunk", "water_speed", water_speed_);
 
   app->event_manager()->subscribe(
       MakeDelegate(this, &World::on_window_resize_event),
@@ -212,6 +214,9 @@ void World::init()
   reflection_gui_texture_ = std::make_shared<GuiTexture>();
   refraction_gui_texture_ = std::make_shared<GuiTexture>();
   refraction_gui_texture_->set_position(glm::vec2{400.0f, 0.0f});
+
+  water_dudv_texture_ = std::make_unique<GlTexture>();
+  water_dudv_texture_->load_from_file("data/waterdudv.png", true);
 
   const auto gui = Application::instance()->gui();
   gui->add_gui_element(reflection_gui_texture_);
@@ -495,8 +500,12 @@ void World::draw_water(const glm::mat4 &view_matrix,
   water_shader_->set_uniform("fog_end", fog_end_);
   water_shader_->set_uniform("fog_color", fog_color_);
 
-  // glActiveTexture(GL_TEXTURE0);
-  // glBindTexture(GL_TEXTURE_2D_ARRAY, block_textures_->id());
+  // Water
+  const auto app        = Application::instance();
+  const auto delta_time = app->delta_time();
+  water_move_factor_ += water_speed_ * delta_time;
+  water_move_factor_ = water_move_factor_ >= 1.0f ? 0.0f : water_move_factor_;
+  water_shader_->set_uniform("move_factor", water_move_factor_);
 
   auto reflection_texture = std::get<std::shared_ptr<GlTexture>>(
       reflection_framebuffer_->color_attachment(0));
@@ -509,6 +518,10 @@ void World::draw_water(const glm::mat4 &view_matrix,
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_2D, refraction_texture->id());
   water_shader_->set_uniform("refraction_tex", 1);
+
+  glActiveTexture(GL_TEXTURE2);
+  glBindTexture(GL_TEXTURE_2D, water_dudv_texture_->id());
+  water_shader_->set_uniform("dudv_tex", 2);
 
   // Then draw transparent water
   for (std::size_t x = 0; x < chunks_.size(); ++x)

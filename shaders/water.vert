@@ -9,6 +9,7 @@ out VS_OUT
 {
   vec3 position;
   vec3 normal;
+  vec2 tex_coords;
   float fog_factor;
   vec4 clip_space;
 } vs_out;
@@ -19,6 +20,8 @@ uniform float fog_start = 50.0;
 uniform float fog_end = 400.0;
 
 uniform mat4 model_matrix;
+
+const float tiling = 0.1f;
 
 void main()
 {
@@ -39,4 +42,7 @@ void main()
 
   // Calculate linear fog
   vs_out.fog_factor = clamp((fog_end - abs(P.z)) / (fog_end - fog_start), 0.0, 1.0);
+
+  // Send the texture coords
+  vs_out.tex_coords = in_tex_coord * tiling;
 }

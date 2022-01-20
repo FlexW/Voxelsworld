@@ -58,6 +58,8 @@ private:
   std::unique_ptr<GlFramebuffer>  reflection_framebuffer_{};
   std::unique_ptr<GlFramebuffer>  refraction_framebuffer_{};
 
+  std::unique_ptr<GlTexture> water_dudv_texture_{};
+
   std::unique_ptr<GlShader> world_shader_{};
   std::unique_ptr<GlShader> water_shader_{};
 
@@ -69,6 +71,9 @@ private:
   glm::vec3 sun_ambient_color_{0.6f};
   glm::vec3 sun_diffuse_color_{1.0f};
   glm::vec3 sun_specular_color_{0.8f};
+
+  float water_move_factor_{0.0f};
+  float water_speed_{0.03f};
 
   std::shared_ptr<GuiTexture> reflection_gui_texture_{};
   std::shared_ptr<GuiTexture> refraction_gui_texture_{};

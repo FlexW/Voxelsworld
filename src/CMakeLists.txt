@@ -1,4 +1,5 @@
 add_subdirectory(log)
+add_subdirectory(util)
 add_subdirectory(gl)
 
 add_executable(app)
@@ -19,7 +20,6 @@ target_sources(app PRIVATE
   string.cpp
   application.cpp
   time.cpp
-  image.cpp
   event.cpp
   event_manager.cpp
   gui.cpp
@@ -31,11 +31,11 @@ target_include_directories(app PRIVATE .)
 target_link_libraries(app PRIVATE
   gl
   log
+  util
   fastdelegate
   glm
   glad
   glfw
-  stb
   )
 
 target_compile_features(app PUBLIC cxx_std_17)

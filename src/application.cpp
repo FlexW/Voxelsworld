@@ -405,14 +405,13 @@ void Application::init()
 
 void Application::main_loop()
 {
-  auto  last_time  = current_time_millis();
-  float delta_time = 0.0f;
+  auto last_time = current_time_millis();
 
   while (glfwWindowShouldClose(window_) == GLFW_FALSE)
   {
     // Calculate delta time
-    delta_time = (current_time_millis() - last_time) / 1000.0f;
-    last_time  = current_time_millis();
+    delta_time_ = (current_time_millis() - last_time) / 1000.0f;
+    last_time   = current_time_millis();
 
     glfwPollEvents();
 
@@ -420,7 +419,7 @@ void Application::main_loop()
     event_manager_.dispatch();
 
     // Process movement
-    player_->update(window_, *world_, *debug_draw_, delta_time);
+    player_->update(window_, *world_, *debug_draw_, delta_time_);
 
     if (glfwGetKey(window_, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
@@ -544,3 +543,5 @@ int Application::window_height() const { return window_height_; }
 EventManager *Application::event_manager() { return &event_manager_; }
 
 Gui *Application::gui() { return gui_.get(); }
+
+float Application::delta_time() const { return delta_time_; }

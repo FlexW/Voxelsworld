@@ -65,6 +65,8 @@ public:
 
   Gui *gui();
 
+  float delta_time() const;
+
 private:
   bool  opengl_debug_;
   bool  is_draw_coordinate_system_;
@@ -79,6 +81,8 @@ private:
   bool is_cursor_enabled_;
   bool is_cull_face_;
   bool is_draw_wireframe_;
+
+  float delta_time_{0.0f};
 
   Config config_;
 

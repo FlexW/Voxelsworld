@@ -27,7 +27,7 @@ bool TextureAtlas::load(const std::filesystem::path &file_path,
   defer(stbi_image_free(texture_data));
 
   texture_ = std::make_unique<GlTexture>();
-  texture_->set_data(texture_data, width, height, channels_count);
+  texture_->set_data(texture_data, width, height, channels_count, true);
 
   texture_width_  = width;
   texture_height_ = height;
