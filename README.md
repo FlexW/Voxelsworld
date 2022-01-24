@@ -2,6 +2,8 @@
 
 Simple tech demo to explore rendering techniques with OpenGL.
 
+![Voxelsworld](screenshots/voxelsworld.png)
+
 ## Controls
 
 W                  - Move forward
