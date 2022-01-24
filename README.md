@@ -6,18 +6,18 @@ Simple tech demo to explore rendering techniques with OpenGL.
 
 ## Controls
 
-W                  - Move forward
-S                  - Move backward
-A                  - Move left
-D                  - Move right
-Move mouse         - Look around
-Left mouse button  - Brick block
-Right mouse button - Place block
+* W                  - Move forward
+* S                  - Move backward
+* A                  - Move left
+* D                  - Move right
+* Move mouse         - Look around
+* Left mouse button  - Brick block
+* Right mouse button - Place block
 
 ## Configuration
 
 In the `data` folder you can find a file called `voxelsworld.ini`. Have a look at the 
-values and change them to you liking. Set for example `free_fly = 0` to very basic gravity. 
+values and change them to you liking. Set for example `free_fly = 0` to get very basic gravity. 
 
 ## Requirements
 
@@ -25,7 +25,7 @@ I've only build the app on Linux so far, but Windows should also work as there a
 no platform depended dependencies. 
 
 Make sure you have a recent OpenGL version on your computer. OpenGL 4.6 is needed.
-You can check it on a Linux computer with `glxinfo | grep "core profile version"`.
+You can check this on a Linux computer with `glxinfo | grep "core profile version"`.
 
 Besides that, you need a C++ compiler that supports C++17, like Clang or GCC. 
 CMake and Ninja are also needed for building.
