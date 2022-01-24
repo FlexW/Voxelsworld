@@ -211,16 +211,8 @@ void World::init()
   water_shader_ = std::make_unique<GlShader>();
   water_shader_->init("shaders/water.vert", "shaders/water.frag");
 
-  reflection_gui_texture_ = std::make_shared<GuiTexture>();
-  refraction_gui_texture_ = std::make_shared<GuiTexture>();
-  refraction_gui_texture_->set_position(glm::vec2{400.0f, 0.0f});
-
   water_dudv_texture_ = std::make_unique<GlTexture>();
   water_dudv_texture_->load_from_file("data/waterdudv.png", true);
-
-  const auto gui = Application::instance()->gui();
-  gui->add_gui_element(reflection_gui_texture_);
-  gui->add_gui_element(refraction_gui_texture_);
 
   recreate_framebuffer();
 }
@@ -775,12 +767,4 @@ void World::recreate_framebuffer()
 
     refraction_framebuffer_->attach(framebuffer_config);
   }
-
-  auto reflection_texture = std::get<std::shared_ptr<GlTexture>>(
-      reflection_framebuffer_->color_attachment(0));
-  reflection_gui_texture_->set_texture(reflection_texture);
-
-  auto refraction_texture = std::get<std::shared_ptr<GlTexture>>(
-      refraction_framebuffer_->color_attachment(0));
-  refraction_gui_texture_->set_texture(refraction_texture);
 }

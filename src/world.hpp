@@ -75,9 +75,6 @@ private:
   float water_move_factor_{0.0f};
   float water_speed_{0.03f};
 
-  std::shared_ptr<GuiTexture> reflection_gui_texture_{};
-  std::shared_ptr<GuiTexture> refraction_gui_texture_{};
-
   bool is_chunk(const glm::ivec3 &position) const;
 
   glm::ivec3

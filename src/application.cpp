@@ -327,6 +327,7 @@ void Application::init()
   }
 
   const auto samples = config_.config_value_int("OpenGL", "samples", 8);
+  glEnable(GL_SAMPLES);
   glfwWindowHint(GLFW_SAMPLES, samples);
 
   if (opengl_debug_)
